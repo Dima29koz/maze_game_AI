@@ -18,7 +18,7 @@ import highway_env
 
 if __name__ == "__main__":
     path = 'storage/highway_ppo/model'
-    train = False
+    train = True
     if train:
         n_cpu = 6
         batch_size = 64
@@ -34,6 +34,7 @@ if __name__ == "__main__":
                     verbose=2,
                     tensorboard_log="highway_ppo/")
         # Train the agent
+        print("{}\n".format(model.policy))
         model.learn(total_timesteps=200_000)
         # Save the agent
         model.save(path=path)

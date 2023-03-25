@@ -1,5 +1,5 @@
-from .agent import *
-from .env import *
+from .agent import Agent
+from .env import make_env
 from .format import *
 from .other import *
 from .storage import *

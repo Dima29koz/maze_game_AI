@@ -1,8 +1,10 @@
 import torch
+from torch.distributions import Categorical
 
-from other_examples import utils
 from .other import device
-from other_examples.model import ACModel
+from .. import utils
+
+from ..maze_model import ACModel
 
 
 class Agent:
@@ -13,9 +15,9 @@ class Agent:
     - to analyze the feedback (i.e. reward and done state) of its action."""
 
     def __init__(self, obs_space, action_space, model_dir,
-                 argmax=False, num_envs=1, use_memory=False, use_text=False):
+                 argmax=False, num_envs=1, use_memory=False, use_text=False, use_stats=False):
         obs_space, self.preprocess_obss = utils.get_obss_preprocessor(obs_space)
-        self.acmodel = ACModel(obs_space, action_space, use_memory=use_memory, use_text=use_text)
+        self.acmodel = ACModel(obs_space, action_space, use_memory=use_memory, use_text=use_text, use_stats=use_stats)
         self.argmax = argmax
         self.num_envs = num_envs
 
@@ -36,9 +38,8 @@ class Agent:
                 dist, _, self.memories = self.acmodel(preprocessed_obss, self.memories)
             else:
                 dist, _ = self.acmodel(preprocessed_obss)
-
         if self.argmax:
-            actions = dist.probs.max(1, keepdim=True)[1]
+            actions = dist.probs.max(1, keepdim=True)[1][0]
         else:
             actions = dist.sample()
 

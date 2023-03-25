@@ -16,27 +16,29 @@ def init_params(m):
 
 
 class ACModel(nn.Module, torch_ac.RecurrentACModel):
-    def __init__(self, obs_space, action_space, use_memory=False, use_text=False):
+    def __init__(self, obs_space, action_space, use_memory=False, use_text=False, use_stats=False):
         super().__init__()
 
         # Decide which components are enabled
         self.use_text = use_text
         self.use_memory = use_memory
+        self.use_stats = use_stats
 
         # Define image embedding
-        self.image_conv = nn.Sequential(
-            # nn.Conv2d(3, 16, (2, 2)),
-            nn.Conv2d(7, 16, (2, 2)),
-            nn.ReLU(),
-            nn.MaxPool2d((2, 2)),
-            nn.Conv2d(16, 32, (2, 2)),
-            nn.ReLU(),
-            nn.Conv2d(32, 64, (2, 2)),
-            nn.ReLU()
-        )
+        # self.image_conv = nn.Sequential(
+        #     # nn.Conv2d(3, 16, (2, 2)),
+        #     nn.Conv2d(4, 16, (2, 2)),
+        #     nn.ReLU(),
+        #     nn.MaxPool2d((2, 2)),
+        #     nn.Conv2d(16, 32, (2, 2)),
+        #     nn.ReLU(),
+        #     nn.Conv2d(32, 64, (2, 2)),
+        #     nn.ReLU()
+        # )
         n = obs_space["image"][0]
         m = obs_space["image"][1]
-        self.image_embedding_size = ((n-1)//2-2)*((m-1)//2-2)*64
+        # self.image_embedding_size = ((n-1)//2-2)*((m-1)//2-2)*64
+        self.image_embedding_size = 147
 
         # Define memory
         if self.use_memory:
@@ -49,16 +51,28 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
             self.text_embedding_size = 128
             self.text_rnn = nn.GRU(self.word_embedding_size, self.text_embedding_size, batch_first=True)
 
+        if self.use_stats:
+            self.stats_embedding_size = 6
+
         # Resize image embedding
         self.embedding_size = self.semi_memory_size
         if self.use_text:
             self.embedding_size += self.text_embedding_size
+        if self.use_stats:
+            self.embedding_size += self.stats_embedding_size
 
         # Define actor's model
         self.actor = nn.Sequential(
-            nn.Linear(self.embedding_size, 64),
+            nn.Linear(self.embedding_size, 128),
             nn.Tanh(),
-            nn.Linear(64, action_space.n)
+            # nn.ReLU(),
+            # nn.Linear(256, 256),
+            # nn.Tanh(),
+            # nn.ReLU(),
+            # nn.Linear(128, 128),
+            # nn.Tanh(),
+            # nn.ReLU(),
+            nn.Linear(128, action_space.n)
         )
 
         # Define critic's model
@@ -80,8 +94,9 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         return self.image_embedding_size
 
     def forward(self, obs, memory):
-        x = obs.image.transpose(1, 3).transpose(2, 3)
-        x = self.image_conv(x)
+        # x = obs.image.transpose(1, 3).transpose(2, 3)
+        x = obs.image
+        # x = self.image_conv(x)
         x = x.reshape(x.shape[0], -1)
 
         if self.use_memory:
@@ -95,6 +110,9 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         if self.use_text:
             embed_text = self._get_embed_text(obs.text)
             embedding = torch.cat((embedding, embed_text), dim=1)
+
+        if self.use_stats:
+            embedding = torch.cat((embedding, obs.stats), dim=1)
 
         x = self.actor(embedding)
         dist = Categorical(logits=F.log_softmax(x, dim=1))

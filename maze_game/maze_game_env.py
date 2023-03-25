@@ -18,10 +18,16 @@ class MazeGameEnv(gym.Env):
     # Enumeration of possible actions
     class Actions(IntEnum):
         # move directions
-        top = 0
-        right = 1
-        bottom = 2
-        left = 3
+        move_top = 0
+        move_right = 1
+        move_bottom = 2
+        move_left = 3
+
+        # bombing directions
+        # bomb_top = 4
+        # bomb_right = 5
+        # bomb_bottom = 6
+        # bomb_left = 7
 
         # Pick up an object
         swap_treasure = 4
@@ -53,13 +59,14 @@ class MazeGameEnv(gym.Env):
         field_observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=(self.size+2, self.size+2, 7),
+            shape=(self.size + 2, self.size + 2, 3),
             dtype=np.uint8,
         )
         self.observation_space = spaces.Dict(
             {
                 "field": field_observation_space,
-                "agent": spaces.Box(0, size + 2, shape=(2,), dtype=np.uint8),
+                # "agent": spaces.Box(0, size + 2, shape=(2,), dtype=np.uint8),
+                "stats": spaces.Box(0, 5, shape=(6,), dtype=np.uint8),
             }
         )
 
@@ -75,22 +82,28 @@ class MazeGameEnv(gym.Env):
             1: (Acts.move, Directions.right),
             2: (Acts.move, Directions.bottom),
             3: (Acts.move, Directions.left),
+
+            # 4: (Acts.throw_bomb, Directions.top),
+            # 5: (Acts.throw_bomb, Directions.right),
+            # 6: (Acts.throw_bomb, Directions.bottom),
+            # 7: (Acts.throw_bomb, Directions.left),
+
             4: (Acts.swap_treasure, None),
-            5: (Acts.info, None)
+            # 100: (Acts.info, None)
         }
 
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
 
-    def _setup_game_local(self):
+    def _setup_game_local(self, seed=None):
         self.rules = ru
-        # self.rules['generator_rules']['river_rules']['has_river'] = False
+        self.rules['generator_rules']['river_rules']['has_river'] = False
         self.rules['generator_rules']['walls']['has_walls'] = False
         # self.rules['generator_rules']['exits_amount'] = 20
         self.rules['generator_rules']['rows'] = self.size
         self.rules['generator_rules']['cols'] = self.size
         self.rules['generator_rules']['is_separated_armory'] = True
-        self.rules['generator_rules']['seed'] = random.random()
+        self.rules['generator_rules']['seed'] = random.random() if seed is None else seed
         # self.rules['generator_rules']['seed'] = 1
         # self.rules['generator_rules']['levels_amount'] = 2
         self.rules['gameplay_rules']['fast_win'] = False
@@ -113,7 +126,7 @@ class MazeGameEnv(gym.Env):
             act = (Acts.info, None)
             is_running = self._process_turn(*act)
 
-    def _process_turn(self, action: Actions, direction: Directions):
+    def _process_turn(self, action: Acts, direction: Directions):
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
         self.success = False
         if response is not None:
@@ -137,7 +150,7 @@ class MazeGameEnv(gym.Env):
     def _get_obs(self):
         return {
             "field": self._get_field(),
-            "agent": self._get_agent_location(),
+            "stats": self._get_stats(),
         }
 
     def _get_info(self):
@@ -158,7 +171,7 @@ class MazeGameEnv(gym.Env):
 
         self.response = None
 
-        self._setup_game_local()
+        self._setup_game_local(seed=seed)
         self.game = Game(rules=self.rules)
         field = self.game.field
         for i, player in enumerate(self.players, 1):
@@ -183,7 +196,6 @@ class MazeGameEnv(gym.Env):
         is_running = True
         truncated = False
 
-        # Map the action (element of {0,1,2,3}) to the direction we walk in
         act = self._action_space_to_action[action]
         is_running = self._process_turn(*act)
 
@@ -192,20 +204,21 @@ class MazeGameEnv(gym.Env):
 
         terminated = not is_running
         if not is_running:
-            reward = self._reward(is_running)
+            reward = self._reward()
             # todo логи + рандом карт + потестить со стенами и реками
         observation = self._get_obs()
         info = self._get_info()
         if self.render_mode == 'human':
             print(info)
+            pass
         return observation, reward, terminated, truncated, info
 
-    def _reward(self, is_running: bool) -> float:
+    def _reward(self) -> float:
         """
         Compute the reward to be given upon success
         """
-        if not is_running:
-            return 10
+        if not self.success:
+            return -1
         return 1 - 0.9 * (self.step_count / self.max_steps)
 
     def render(self):
@@ -233,3 +246,12 @@ class MazeGameEnv(gym.Env):
         x, y = self.game.get_current_player().cell.position.get()
         # return np.array([y, x], dtype=np.uint8)
         return x, y
+
+    def _get_stats(self):
+        player = self.game.get_current_player()
+        return np.array(
+            [
+                player.health, player.arrows, player.bombs, 1 if player.treasure else 0,
+                player.cell.position.x, player.cell.position.y
+            ],
+            dtype=np.uint8)

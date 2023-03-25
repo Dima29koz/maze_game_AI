@@ -33,13 +33,13 @@ def get_obss_preprocessor(obs_space):
     elif isinstance(obs_space, gym.spaces.Dict) and "field" in obs_space.spaces.keys():
         obs_space = {
             "image": obs_space.spaces["field"].shape,
-            "agent": obs_space.spaces["agent"].shape,
+            "stats": obs_space.spaces["stats"].shape,
         }
 
         def preprocess_obss(obss, device=None):
             return torch_ac.DictList({
                 "image": preprocess_images([obs["field"] for obs in obss], device=device),
-                "agent": preprocess_images([obs["agent"] for obs in obss], device=device)
+                "stats": preprocess_stats([obs["stats"] for obs in obss], device=device)
             })
 
     else:
@@ -53,6 +53,9 @@ def preprocess_images(images, device=None):
     images = numpy.array(images)
     return torch.tensor(images, device=device, dtype=torch.float)
 
+def preprocess_stats(stats, device=None):
+    stats = numpy.array(stats)
+    return torch.tensor(stats, device=device, dtype=torch.float)
 
 def preprocess_texts(texts, vocab, device=None):
     var_indexed_texts = []

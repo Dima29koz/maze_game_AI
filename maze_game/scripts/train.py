@@ -48,7 +48,7 @@ parser.add_argument("--gae-lambda", type=float, default=0.95,
                     help="lambda coefficient in GAE formula (default: 0.95, 1 means no gae)")
 parser.add_argument("--entropy-coef", type=float, default=0.01,
                     help="entropy term coefficient (default: 0.01)")
-parser.add_argument("--value-loss-coef", type=float, default=0.5,
+parser.add_argument("--value-loss-coef", type=float, default=0.25,
                     help="value loss term coefficient (default: 0.5)")
 parser.add_argument("--max-grad-norm", type=float, default=0.5,
                     help="maximum norm of gradient (default: 0.5)")
@@ -62,6 +62,8 @@ parser.add_argument("--recurrence", type=int, default=1,
                     help="number of time-steps gradient is backpropagated (default: 1). If > 1, a LSTM is added to the model to have memory.")
 parser.add_argument("--text", action="store_true", default=False,
                     help="add a GRU to the model to handle text input")
+parser.add_argument("--stats", action="store_true", default=False,
+                    help="add a player stats to the model")
 
 if __name__ == "__main__":
 
@@ -120,7 +122,7 @@ if __name__ == "__main__":
 
     # Load model
 
-    acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text)
+    acmodel = ACModel(obs_space, envs[0].action_space, args.mem, args.text, args.stats)
     if "model_state" in status:
         acmodel.load_state_dict(status["model_state"])
     acmodel.to(device)
@@ -180,7 +182,10 @@ if __name__ == "__main__":
             data += [logs["entropy"], logs["value"], logs["policy_loss"], logs["value_loss"], logs["grad_norm"]]
 
             txt_logger.info(
-                "U {} | F {:06} | FPS {:04.0f} | D {} | rR:momM {:.2f} {:.2f} {:.2f} {:.2f} | F:momM {:.1f} {:.1f} {} {} | H {:.3f} | V {:.3f} | pL {:.3f} | vL {:.3f} | grad {:.3f}"
+                "U {} | F {:06} | FPS {:04.0f} | D {} | "
+                "rR: mean {:.2f} std {:.2f} min {:.2f} max {:.2f} | "
+                "Frames: {:.1f} {:.1f} {} {} | "
+                "H {:.3f} | V {:.3f} | pL {:.3f} | vL {:.3f} | grad {:.3f}"
                 .format(*data))
 
             header += ["return_" + key for key in return_per_episode.keys()]

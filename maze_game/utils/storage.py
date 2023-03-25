@@ -4,8 +4,8 @@ import torch
 import logging
 import sys
 
-from other_examples import utils
-from .other import device
+from .. import utils
+from . import device
 
 
 def create_folders_if_necessary(path):
@@ -24,7 +24,9 @@ def get_model_dir(model_name):
     return os.path.join(get_storage_dir(), model_name)
 
 
-def get_status_path(model_dir):
+def get_status_path(model_dir, step=None):
+    if step:
+        return os.path.join(model_dir, str(step), "status.pt")
     return os.path.join(model_dir, "status.pt")
 
 
@@ -33,8 +35,8 @@ def get_status(model_dir):
     return torch.load(path, map_location=device)
 
 
-def save_status(status, model_dir):
-    path = get_status_path(model_dir)
+def save_status(status, model_dir, step=None):
+    path = get_status_path(model_dir, step)
     utils.create_folders_if_necessary(path)
     torch.save(status, path)
 

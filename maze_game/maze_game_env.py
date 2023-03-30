@@ -35,7 +35,7 @@ class MazeGameEnv(gym.Env):
         # get info
         # info = 5
 
-    def __init__(self, render_mode=None, size=5, max_steps=1000):
+    def __init__(self, render_mode=None, size=5, max_steps=250):
         self.size = size
         self.max_steps = max_steps
 
@@ -59,13 +59,12 @@ class MazeGameEnv(gym.Env):
         field_observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=(self.size + 2, self.size + 2, 3),
+            shape=(self.size + 2, self.size + 2, 2),
             dtype=np.uint8,
         )
         self.observation_space = spaces.Dict(
             {
                 "field": field_observation_space,
-                # "agent": spaces.Box(0, size + 2, shape=(2,), dtype=np.uint8),
                 "stats": spaces.Box(0, 5, shape=(6,), dtype=np.uint8),
             }
         )
@@ -197,6 +196,11 @@ class MazeGameEnv(gym.Env):
         truncated = False
 
         act = self._action_space_to_action[action]
+        current_player = self.game.get_current_player()
+        if act[0] is Acts.swap_treasure and current_player.treasure is None and self.game.get_allowed_abilities(
+                current_player).get(Acts.swap_treasure):
+            # todo если нет клада в руке и можно его подобрать и действие == подобрать
+            reward = self._reward()
         is_running = self._process_turn(*act)
 
         if self.step_count >= self.max_steps:
@@ -204,8 +208,8 @@ class MazeGameEnv(gym.Env):
 
         terminated = not is_running
         if not is_running:
+            # todo если выиграл
             reward = self._reward()
-            # todo логи + рандом карт + потестить со стенами и реками
         observation = self._get_obs()
         info = self._get_info()
         if self.render_mode == 'human':
@@ -217,8 +221,6 @@ class MazeGameEnv(gym.Env):
         """
         Compute the reward to be given upon success
         """
-        if not self.success:
-            return -1
         return 1 - 0.9 * (self.step_count / self.max_steps)
 
     def render(self):
@@ -239,12 +241,11 @@ class MazeGameEnv(gym.Env):
             pygame.quit()
 
     def _get_field(self):
-        return encode(self.game.field.game_map, self.game.field.treasures, *self._get_agent_location())
-        # return encode(self.game.field.game_map, self.game.field.treasures)
+        # return encode(self.game.field.game_map, self.game.field.treasures, *self._get_agent_location())
+        return encode(self.game.field.game_map, self.game.field.treasures)
 
     def _get_agent_location(self):
         x, y = self.game.get_current_player().cell.position.get()
-        # return np.array([y, x], dtype=np.uint8)
         return x, y
 
     def _get_stats(self):
@@ -252,6 +253,6 @@ class MazeGameEnv(gym.Env):
         return np.array(
             [
                 player.health, player.arrows, player.bombs, 1 if player.treasure else 0,
-                player.cell.position.x, player.cell.position.y
+                *self._get_agent_location()
             ],
             dtype=np.uint8)

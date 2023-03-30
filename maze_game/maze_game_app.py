@@ -59,6 +59,6 @@ def run_random_with_mask(env: MazeGameEnv | Env):
 
 if __name__ == "__main__":
     env = gymnasium.make('env_maze/MazeGame-v0', render_mode='human')
-    # run_random(env)
+    run_random(env)
     # run_random_with_mask(env)
-    test_conv(env)
+    # test_conv(env)

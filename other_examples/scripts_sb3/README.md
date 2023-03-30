@@ -1,5 +1,5 @@
 ```bash
-tensorboard --logdir=storage/highway_ppo
+tensorboard --logdir=other_examples/scripts_sb3/highway_ppo
 ```
 # Try it on Google Colab
 

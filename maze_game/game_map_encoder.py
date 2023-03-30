@@ -35,12 +35,12 @@ CELL_DIR_TO_IDX = {
 }
 
 
-def encode(game_map: GameMap, treasures: list, agent_x, agent_y):
+def encode(game_map: GameMap, treasures: list):
     field = game_map.get_level(LevelPosition(0, 0, 0)).field
     rows = len(field[0])
     cols = len(field)
 
-    num_layers = 3
+    num_layers = 2
     array = np.zeros((rows, cols, num_layers), dtype="uint8")
 
     for row in range(rows):
@@ -56,7 +56,6 @@ def encode(game_map: GameMap, treasures: list, agent_x, agent_y):
             #     array[row, col, i] = WALL_TO_IDX[type(obj.walls.get(direction))]
 
     for treasure in treasures:
-        array[treasure.position.y, treasure.position.x, num_layers-2] += 1
+        array[treasure.position.y, treasure.position.x, num_layers-1] += 1
 
-    array[agent_y, agent_x, num_layers-1] = 1
-    return array.ravel()
+    return array

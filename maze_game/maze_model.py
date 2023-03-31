@@ -27,7 +27,7 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         # Define image embedding
         self.image_conv = nn.Sequential(
             # nn.Conv2d(3, 16, (2, 2)),
-            nn.Conv2d(2, 16, (2, 2)),
+            nn.Conv2d(3, 16, (2, 2)),
             nn.Tanh(),
             # nn.ReLU(),
             nn.MaxPool2d((2, 2)),
@@ -66,6 +66,8 @@ class ACModel(nn.Module, torch_ac.RecurrentACModel):
         # Define actor's model
         self.actor = nn.Sequential(
             nn.Linear(self.embedding_size, 128),
+            nn.Tanh(),
+            nn.Linear(128, 128),
             nn.Tanh(),
             nn.Linear(128, action_space.n)
         )

@@ -40,7 +40,7 @@ def encode(game_map: GameMap, treasures: list):
     rows = len(field[0])
     cols = len(field)
 
-    num_layers = 2
+    num_layers = 3
     array = np.zeros((rows, cols, num_layers), dtype="uint8")
 
     for row in range(rows):
@@ -48,10 +48,10 @@ def encode(game_map: GameMap, treasures: list):
             obj = field[row][col]
 
             array[row, col, 0] = CELL_TO_IDX[type(obj)]
-            # try:
-            #     array[row, col, 1] = CELL_DIR_TO_IDX[obj.direction]
-            # except (AttributeError, KeyError):
-            #     array[row, col, 1] = 0
+            try:
+                array[row, col, 1] = CELL_DIR_TO_IDX[obj.direction]
+            except (AttributeError, KeyError):
+                array[row, col, 1] = 0
             # for i, direction in enumerate(Directions, start=2):
             #     array[row, col, i] = WALL_TO_IDX[type(obj.walls.get(direction))]
 

@@ -1,16 +1,20 @@
 ```bash
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame --stats --frames 200_000
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame --stats --frames 1_000_000
-python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame --stats
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_0 --stats --frames 1_000_000 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_0 --stats --frames 2_000_000 --lr 1e-4 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_0 --stats --frames 3_000_000 --lr 5e-5 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_0 --stats --frames 4_000_000 --lr 2.5e-5
+python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_0 --stats
 
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_2 --stats --frames 1_000_000
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_2 --stats --frames 1_000_000 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_2 --stats --frames 2_000_000 --lr 1e-4 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_2 --stats --frames 3_000_000 --lr 5e-5 --batch-size 512
 python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_2 --stats
 
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3 --stats --frames 1_000_000
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3 --stats --frames 2_000_000 --lr 1e-4
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3 --stats --frames 3_000_000 --lr 5e-5
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3 --stats --frames 4_000_000 --lr 2.5e-5
-python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_3 --stats
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3f --stats --frames 1_000_000 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3f --stats --frames 2_000_000 --lr 1e-4 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3 --stats --frames 3_000_000 --lr 5e-5 --batch-size 512
+python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_3 --stats --frames 4_000_000 --lr 2.5e-5 --batch-size 512
+python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_3f --stats
 
 python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_4 --stats --frames 1_000_000 --lr 1e-3 --value-loss-coef 0.5
 python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_4 --stats --frames 2_000_000 --lr 1e-4 --value-loss-coef 0.5
@@ -20,8 +24,6 @@ python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_4 --stat
 python -m scripts.train --algo a2c --env env_maze/MazeGame-v0 --model MazeGame_5 --stats --frames 1_000_000 --lr 1e-3
 python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_5 --stats
 
-python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_6 --stats --frames 100_000
-python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_6 --stats
 
 python -m scripts.train --algo ppo --env env_maze/MazeGame-v0 --model MazeGame_7 --stats --lr 1e-2 --epochs 4 --frames-per-proc 256 --batch-size 512 --value-loss-coef 0.5 --frames 1_000_000
 python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_7 --stats

@@ -59,7 +59,7 @@ class MazeGameEnv(gym.Env):
         field_observation_space = spaces.Box(
             low=0,
             high=255,
-            shape=(self.size + 2, self.size + 2, 2),
+            shape=(self.size + 2, self.size + 2, 3),
             dtype=np.uint8,
         )
         self.observation_space = spaces.Dict(
@@ -96,7 +96,7 @@ class MazeGameEnv(gym.Env):
 
     def _setup_game_local(self, seed=None):
         self.rules = ru
-        self.rules['generator_rules']['river_rules']['has_river'] = False
+        # self.rules['generator_rules']['river_rules']['has_river'] = False
         self.rules['generator_rules']['walls']['has_walls'] = False
         # self.rules['generator_rules']['exits_amount'] = 20
         self.rules['generator_rules']['rows'] = self.size
@@ -154,6 +154,7 @@ class MazeGameEnv(gym.Env):
 
     def _get_info(self):
         return {
+            "step": self.step_count,
             "turn_info": self.response.get_turn_info(),
             "info": self.response.get_info()
         }
@@ -212,9 +213,6 @@ class MazeGameEnv(gym.Env):
             reward = self._reward()
         observation = self._get_obs()
         info = self._get_info()
-        if self.render_mode == 'human':
-            print(info)
-            pass
         return observation, reward, terminated, truncated, info
 
     def _reward(self) -> float:

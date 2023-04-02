@@ -3,7 +3,7 @@
 RL starter files in order to immediatly train, visualize and evaluate an agent **without writing any line of code**.
 
 <p align="center">
-    <img width="300" src="other_examples/README-rsrc/visualize-keycorridor.gif">
+    <img width="300" src="README-rsrc/visualize-keycorridor.gif">
 </p>
 
 These files are suited for [`gym-minigrid`](https://github.com/maximecb/gym-minigrid) environments and [`torch-ac`](https://github.com/lcswillems/torch-ac) RL algorithms. They are easy to adapt to other environments and RL algorithms.
@@ -43,7 +43,7 @@ pip3 install -e .
 
 Train, visualize and evaluate an agent on the `MiniGrid-DoorKey-5x5-v0` environment:
 
-<p align="center"><img src="other_examples/README-rsrc/doorkey.png"></p>
+<p align="center"><img src="README-rsrc/doorkey.png"></p>
 
 1. Train the agent on the `MiniGrid-DoorKey-5x5-v0` environment with PPO algorithm:
 
@@ -52,7 +52,7 @@ python -m scripts.train --algo ppo --env MiniGrid-DoorKey-8x8-v0 --model DoorKey
 python -m scripts.train --algo ppo --env MiniGrid-DoorKey-8x8-v0 --model DoorKey_r --recurrence 4 --save-interval 10 --frames 500000
 ```
 
-<p align="center"><img src="other_examples/README-rsrc/train-terminal-logs.png"></p>
+<p align="center"><img src="README-rsrc/train-terminal-logs.png"></p>
 
 2. Visualize agent's behavior:
 
@@ -61,7 +61,7 @@ python -m scripts.visualize --env MiniGrid-DoorKey-8x8-v0 --model DoorKey
 python -m scripts.visualize --env MiniGrid-DoorKey-8x8-v0 --model DoorKey_r --memory
 ```
 
-<p align="center"><img src="other_examples/README-rsrc/visualize-doorkey.gif"></p>
+<p align="center"><img src="README-rsrc/visualize-doorkey.gif"></p>
 
 3. Evaluate agent's performance:
 
@@ -69,7 +69,7 @@ python -m scripts.visualize --env MiniGrid-DoorKey-8x8-v0 --model DoorKey_r --me
 python -m scripts.evaluate --env MiniGrid-DoorKey-5x5-v0 --model DoorKey
 ```
 
-<p align="center"><img src="other_examples/README-rsrc/evaluate-terminal-logs.png"></p>
+<p align="center"><img src="README-rsrc/evaluate-terminal-logs.png"></p>
 
 **Note:** More details on the commands are given below.
 
@@ -83,7 +83,7 @@ In the `GoToDoor` environment, the agent receives an image along with a textual 
 python -m scripts.train --algo ppo --env MiniGrid-GoToDoor-5x5-v0 --model GoToDoor --text --save-interval 10 --frames 1000000
 ```
 
-<p align="center"><img src="other_examples/README-rsrc/visualize-gotodoor.gif"></p>
+<p align="center"><img src="README-rsrc/visualize-gotodoor.gif"></p>
 
 ### Add memory
 
@@ -93,7 +93,7 @@ In the `RedBlueDoors` environment, the agent has to open the red door then the b
 python -m scripts.train --algo ppo --env MiniGrid-RedBlueDoors-6x6-v0 --model RedBlueDoors --recurrence 4 --save-interval 10 --frames 100000
 ```
 
-<p align="center"><img src="other_examples/README-rsrc/visualize-redbluedoors.gif"></p>
+<p align="center"><img src="README-rsrc/visualize-redbluedoors.gif"></p>
 
 ```bash
 python -m scripts.visualize --env MiniGrid-RedBlueDoors-6x6-v0 --model RedBlueDoors
@@ -147,13 +147,13 @@ and a bunch of optional arguments among which:
 
 During training, logs are printed in your terminal (and saved in text and CSV format):
 
-<p align="center"><img src="other_examples/README-rsrc/train-terminal-logs.png"></p>
+<p align="center"><img src="README-rsrc/train-terminal-logs.png"></p>
 
 **Note:** `U` gives the update number, `F` the total number of frames, `FPS` the number of frames per second, `D` the total duration, `rR:μσmM` the mean, std, min and max reshaped return per episode, `F:μσmM` the mean, std, min and max number of frames per episode, `H` the entropy, `V` the value, `pL` the policy loss, `vL` the value loss and `∇` the gradient norm.
 
 During training, logs are also plotted in Tensorboard:
 
-<p><img src="other_examples/README-rsrc/train-tensorboard.png"></p>
+<p><img src="README-rsrc/train-tensorboard.png"></p>
 
 <h2 id="scripts-visualize">scripts/visualize.py</h2>
 
@@ -163,7 +163,7 @@ An example of use:
 python -m scripts.visualize --env MiniGrid-DoorKey-5x5-v0 --model DoorKey
 ```
 
-<p align="center"><img src="other_examples/README-rsrc/visualize-doorkey.gif"></p>
+<p align="center"><img src="README-rsrc/visualize-doorkey.gif"></p>
 
 In this use case, the script displays how the model in `storage/DoorKey` behaves on the MiniGrid DoorKey environment.
 
@@ -183,7 +183,7 @@ An example of use:
 python -m scripts.evaluate --env MiniGrid-DoorKey-5x5-v0 --model DoorKey
 ```
 
-<p align="center"><img src="other_examples/README-rsrc/evaluate-terminal-logs.png"></p>
+<p align="center"><img src="README-rsrc/evaluate-terminal-logs.png"></p>
 
 In this use case, the script prints in the terminal the performance among 100 episodes of the model in `storage/DoorKey`.
 
@@ -199,7 +199,7 @@ and a bunch of optional arguments among which:
 
 The default model is discribed by the following schema:
 
-<p align="center"><img src="other_examples/README-rsrc/model.png"></p>
+<p align="center"><img src="README-rsrc/model.png"></p>
 
 By default, the memory part (in red) and the langage part (in blue) are disabled. They can be enabled by setting to `True` the `use_memory` and `use_text` parameters of the model constructor.
 

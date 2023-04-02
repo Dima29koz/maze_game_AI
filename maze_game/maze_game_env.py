@@ -58,24 +58,21 @@ class MazeGameEnv(gym.Env):
 
         field_observation_space = spaces.Box(
             low=0,
-            high=255,
-            shape=(self.size + 2, self.size + 2, 3),
+            high=15,
+            shape=(2, self.size + 2, self.size + 2),
             dtype=np.uint8,
         )
         self.observation_space = spaces.Dict(
             {
                 "field": field_observation_space,
-                "stats": spaces.Box(0, 5, shape=(6,), dtype=np.uint8),
+                "stats": spaces.Box(0, 7, shape=(6,), dtype=np.uint8),
             }
         )
 
         self.actions = MazeGameEnv.Actions
         self.action_space = spaces.Discrete(len(self.actions))
+        self.invalid_actions: list[int] = []
 
-        """
-        The following dictionary maps abstract actions from `self.action_space` to 
-        the direction we will walk in if that action is taken.
-        """
         self._action_space_to_action = {
             0: (Acts.move, Directions.top),
             1: (Acts.move, Directions.right),
@@ -140,11 +137,13 @@ class MazeGameEnv(gym.Env):
             return False
         return True
 
-    def get_allowed_actions_mask(self):
+    def action_masks(self):
         act_pl_abilities = self.game.get_allowed_abilities(self.game.get_current_player())
-        mask = [1 if act_pl_abilities.get(self._action_space_to_action[action][0]) else 0 for action in self.actions]
-        mask[-1] = 0  # fixme action info should be removed
-        return np.array(mask, dtype=np.int8)
+        mask = [
+            True if act_pl_abilities.get(self._action_space_to_action[action][0]) else False
+            for action in self.actions
+        ]
+        return mask
 
     def _get_obs(self):
         return {

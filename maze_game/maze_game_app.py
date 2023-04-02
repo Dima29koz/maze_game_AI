@@ -1,4 +1,5 @@
 import gymnasium
+import numpy as np
 import torch_ac
 from gymnasium import Env
 from torch import nn
@@ -51,7 +52,7 @@ def run_random_with_mask(env: MazeGameEnv | Env):
     done = False
     obs = env.reset()
     while not done:
-        mask = env.get_allowed_actions_mask()
+        mask = np.array(env.action_masks(), dtype=np.int8)
         action = env.action_space.sample(mask=mask)
         obs, reward, done, _, info = env.step(action)
         env.render()

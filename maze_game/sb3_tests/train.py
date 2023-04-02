@@ -1,6 +1,6 @@
 from typing import Callable
 
-from stable_baselines3 import PPO
+from sb3_contrib import MaskablePPO
 from stable_baselines3.common.env_util import make_vec_env
 
 from maze_game import MazeGameEnv
@@ -38,16 +38,18 @@ def train():
         features_extractor_kwargs=dict(cnn_output_dim=128),
     )
     model_kwargs = dict(
-        learning_rate=linear_schedule(0.001),
+        learning_rate=linear_schedule(0.002),
+        # learning_rate=0.001,
         n_epochs=4,
         batch_size=512,
         n_steps=128,
         ent_coef=0.01,
+        vf_coef=0.25,
     )
     learn_kwargs = dict(
-        total_timesteps=4_000_000
+        total_timesteps=1_000_000
     )
-    model = PPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=2, tensorboard_log='storage', **model_kwargs)
+    model = MaskablePPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=2, tensorboard_log='storage', **model_kwargs)
     print(model.policy)
     model.learn(**learn_kwargs)
     model.save("storage/ppo_MazeGame")

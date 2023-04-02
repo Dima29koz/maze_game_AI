@@ -4,11 +4,10 @@ import torch as th
 import torch.nn as nn
 from gymnasium import spaces
 
-from stable_baselines3 import PPO
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-from maze_game.sb3_tests.MazeCNN import MazeCNN
+from maze_game.sb3_tests.maze_cnn import MazeCNN
 
 
 class CustomCombinedExtractor(BaseFeaturesExtractor):

@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.preprocessing import normalize, MinMaxScaler, MaxAbsScaler, maxabs_scale, minmax_scale
 
 from .game_core import Directions
 from .game_core.game_engine.field import cell, wall

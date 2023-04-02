@@ -1,8 +1,10 @@
 import gymnasium as gym
 from stable_baselines3 import PPO
 
-model = PPO.load("ppo_MazeGame")
+from maze_game import MazeGameEnv
+
 env = gym.make('env_maze/MazeGame-v0', render_mode='human')
+model = PPO.load("storage/ppo_MazeGame", env=env)
 
 sum_reward = 0
 eps = 0

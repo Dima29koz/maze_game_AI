@@ -17,9 +17,6 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
             observation_space: spaces.Dict,
             cnn_output_dim: int = 128,
     ) -> None:
-        # We do not know features-dim here before going over all the items,
-        # so put something dummy for now. PyTorch requires calling
-        # nn.Module.__init__ before adding modules
         super().__init__(observation_space, features_dim=1)
 
         extractors: Dict[str, nn.Module] = {}

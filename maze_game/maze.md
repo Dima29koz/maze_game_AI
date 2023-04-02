@@ -39,4 +39,6 @@ python -m scripts.train --algo a2c --env env_maze/MazeGame-v0 --model MazeGame_a
 python -m scripts.visualize --env env_maze/MazeGame-v0 --model MazeGame_a2c
 
 tensorboard --logdir=maze_game/storage
+tensorboard --logdir_spec sb3:maze_game/sb3_tests/storage,custom:maze_game/storage
+tensorboard --logdir=maze_game/sb3_tests/storage 
 ```

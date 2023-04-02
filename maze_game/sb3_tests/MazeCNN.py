@@ -23,11 +23,12 @@ class MazeCNN(BaseFeaturesExtractor):
 
         n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 32, (2, 2)),
+            nn.Conv2d(n_input_channels, 16, (2, 2)),
+            nn.Tanh(),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(16, 32, (2, 2)),
             nn.Tanh(),
             nn.Conv2d(32, 64, (2, 2)),
-            nn.Tanh(),
-            nn.Conv2d(64, 64, (2, 2)),
             nn.Tanh(),
             nn.Flatten(),
         )

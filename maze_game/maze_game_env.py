@@ -156,7 +156,8 @@ class MazeGameEnv(gym.Env):
         return {
             "step": self.step_count,
             "turn_info": self.response.get_turn_info(),
-            "info": self.response.get_info()
+            "info": self.response.get_info(),
+            "is_success": False,
         }
 
     def reset(self, seed=None, options=None):
@@ -204,15 +205,18 @@ class MazeGameEnv(gym.Env):
             reward = self._reward()
         is_running = self._process_turn(*act)
 
-        if self.step_count >= self.max_steps:
-            truncated = True
+        observation = self._get_obs()
+        info = self._get_info()
 
         terminated = not is_running
         if not is_running:
             # todo если выиграл
             reward = self._reward()
-        observation = self._get_obs()
-        info = self._get_info()
+            info["is_success"] = True
+
+        if self.step_count >= self.max_steps:
+            truncated = True
+            info["TimeLimit.truncated"] = True
         return observation, reward, terminated, truncated, info
 
     def _reward(self) -> float:

@@ -15,6 +15,7 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
     :return: schedule that computes
       current learning rate depending on remaining progress
     """
+
     def func(progress_remaining: float) -> float:
         """
         Progress will decrease from 1 (beginning) to 0.
@@ -22,12 +23,12 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
         :param progress_remaining:
         :return: current learning rate
         """
-        return progress_remaining * initial_value
+        return (0.9 * progress_remaining + 0.1) * initial_value
 
     return func
 
 
-def train():
+def train(checkpoint=False):
     monitor_kwargs = dict(
         info_keywords=("is_success",)
     )
@@ -49,11 +50,14 @@ def train():
     learn_kwargs = dict(
         total_timesteps=1_000_000
     )
-    model = MaskablePPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=2, tensorboard_log='storage', **model_kwargs)
+    model = MaskablePPO("MultiInputPolicy", env, policy_kwargs=policy_kwargs, verbose=2, tensorboard_log='storage',
+                        **model_kwargs)
+    if checkpoint:
+        model.set_parameters("storage/ppo_MazeGame")
     print(model.policy)
     model.learn(**learn_kwargs)
     model.save("storage/ppo_MazeGame")
 
 
 if __name__ == '__main__':
-    train()
+    train(checkpoint=False)

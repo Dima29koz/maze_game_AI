@@ -8,16 +8,17 @@ from maze_game import MazeGameEnv
 from maze_game.sb3_tests.maze_cnn import MazeCNN
 
 cnn = nn.Sequential(
-            nn.Conv2d(2, 16, (3, 3), padding=1),  # 16 7 7
-            nn.Tanh(),
-            nn.MaxPool2d((2, 2)),  # 16 3 3
-            nn.Conv2d(16, 32, (3, 3), padding=1),  # 32 3 3
-            nn.Tanh(),
-            nn.Conv2d(32, 64, (3, 3), padding=1),  # 64 1 1
-            nn.Tanh(),
-            nn.MaxPool2d((2, 2)),  # 64 1 1
-            nn.Flatten(),
-        )
+    nn.Conv2d(26, 64, (3, 3), padding=1),  # 64 7 7
+    nn.Tanh(),
+    nn.Conv2d(64, 128, (3, 3), padding=1),  # 128 3 3
+    nn.Tanh(),
+    nn.MaxPool2d((2, 2)),  # 128 3 3
+    nn.Conv2d(128, 256, (3, 3)),  # 64 3 3
+    nn.Tanh(),
+    # nn.Conv2d(256, 512, (2, 2)),
+    # nn.Tanh(),
+    nn.Flatten(),
+)
 
 
 def test_cnn(env: MazeGameEnv | Env):

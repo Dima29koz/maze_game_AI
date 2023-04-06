@@ -2,6 +2,7 @@ from typing import Callable
 
 from sb3_contrib import MaskablePPO
 from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
 
 from maze_game import MazeGameEnv
 from maze_game.sb3_tests.features_extractor import CustomCombinedExtractor
@@ -32,11 +33,12 @@ def train(checkpoint=False):
     monitor_kwargs = dict(
         info_keywords=("is_success",)
     )
-    env = make_vec_env("env_maze/MazeGame-v0", n_envs=16, monitor_kwargs=monitor_kwargs)
+    env = make_vec_env("env_maze/MazeGame-v0", n_envs=16, monitor_kwargs=monitor_kwargs, vec_env_cls=SubprocVecEnv)
 
     policy_kwargs = dict(
         features_extractor_class=CustomCombinedExtractor,
-        features_extractor_kwargs=dict(cnn_output_dim=128),
+        features_extractor_kwargs=dict(cnn_output_dim=256),
+        net_arch=dict(pi=[256, 256], vf=[256, 256]),
     )
     model_kwargs = dict(
         learning_rate=linear_schedule(0.002),

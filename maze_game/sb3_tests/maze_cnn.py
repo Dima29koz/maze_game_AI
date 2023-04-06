@@ -18,20 +18,43 @@ class MazeCNN(BaseFeaturesExtractor):
     ) -> None:
 
         super().__init__(observation_space, features_dim)
-        # We assume CxHxW images (channels first)
-        # Re-ordering will be done by pre-preprocessing or wrapper
+        # We assume CxHxW observations (channels first)
 
         n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
-            nn.Conv2d(n_input_channels, 16, (3, 3), padding=1),  # 16 7 7
+            nn.Conv2d(n_input_channels, 64, (3, 3), padding=1),
             nn.Tanh(),
-            nn.MaxPool2d((2, 2)),  # 16 3 3
-            nn.Conv2d(16, 32, (3, 3), padding=1),  # 32 3 3
+            nn.Conv2d(64, 128, (3, 3), padding=1),
             nn.Tanh(),
-            nn.Conv2d(32, 64, (3, 3), padding=1),  # 64 1 1
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(128, 256, (3, 3)),
             nn.Tanh(),
-            nn.MaxPool2d((2, 2)),  # 64 1 1
             nn.Flatten(),
+            # nn.Conv2d(n_input_channels, 64, (3, 3), padding=1),  # 64 7 7
+            # nn.Sigmoid(),
+            # nn.MaxPool2d((2, 2)),  # 64 3 3
+            # nn.Conv2d(64, 128, (3, 3), padding=1),  # 128 3 3
+            # nn.Sigmoid(),
+            # nn.Conv2d(128, 256, (2, 2)),  # 64 3 3
+            # nn.Sigmoid(),
+            # nn.Conv2d(256, 512, (2, 2)),
+            # nn.Sigmoid(),
+            # nn.Flatten(),
+            # nn.Conv2d(n_input_channels, 64, (3, 3), padding=1),  # 16 7 7
+            # # nn.Tanh(),
+            # nn.Sigmoid(),
+            # nn.Conv2d(64, 128, (3, 3), padding=1),  # 32 7 7
+            # # nn.Tanh(),
+            # nn.Sigmoid(),
+            # nn.MaxPool2d((2, 2)),  # 32 3 3
+            # nn.Conv2d(128, 256, (3, 3), padding=1),  # 64 3 3
+            # # nn.Tanh(),
+            # nn.Sigmoid(),
+            # nn.Conv2d(256, 512, (3, 3), padding=1),
+            # # nn.Tanh(),
+            # nn.Sigmoid(),
+            # nn.MaxPool2d((2, 2)),  # 128 1 1
+            # nn.Flatten(),
             # nn.Conv2d(n_input_channels, 16, (2, 2)),
             # nn.Tanh(),
             # nn.MaxPool2d((2, 2)),

@@ -7,9 +7,10 @@ from gymnasium import spaces
 import pygame
 import numpy as np
 
-from maze_game.game_map_encoder import encode
+from maze_game.game_map_encoder import encode, one_hot_encode
 from maze_game.game_core import SpectatorGUI, Game, Directions, Actions as Acts
 from maze_game.game_core import base_rules as ru
+from maze_game.game_core.game_engine.field import wall as w
 
 
 class MazeGameEnv(gym.Env):
@@ -24,13 +25,13 @@ class MazeGameEnv(gym.Env):
         move_left = 3
 
         # bombing directions
-        # bomb_top = 4
-        # bomb_right = 5
-        # bomb_bottom = 6
-        # bomb_left = 7
+        bomb_top = 4
+        bomb_right = 5
+        bomb_bottom = 6
+        bomb_left = 7
 
         # Pick up an object
-        swap_treasure = 4
+        swap_treasure = 8
 
         # get info
         # info = 5
@@ -58,8 +59,8 @@ class MazeGameEnv(gym.Env):
 
         field_observation_space = spaces.Box(
             low=0,
-            high=15,
-            shape=(2, self.size + 2, self.size + 2),
+            high=2,
+            shape=(26, self.size + 2, self.size + 2),
             dtype=np.uint8,
         )
         self.observation_space = spaces.Dict(
@@ -79,12 +80,12 @@ class MazeGameEnv(gym.Env):
             2: (Acts.move, Directions.bottom),
             3: (Acts.move, Directions.left),
 
-            # 4: (Acts.throw_bomb, Directions.top),
-            # 5: (Acts.throw_bomb, Directions.right),
-            # 6: (Acts.throw_bomb, Directions.bottom),
-            # 7: (Acts.throw_bomb, Directions.left),
+            4: (Acts.throw_bomb, Directions.top),
+            5: (Acts.throw_bomb, Directions.right),
+            6: (Acts.throw_bomb, Directions.bottom),
+            7: (Acts.throw_bomb, Directions.left),
 
-            4: (Acts.swap_treasure, None),
+            8: (Acts.swap_treasure, None),
             # 100: (Acts.info, None)
         }
 
@@ -94,7 +95,7 @@ class MazeGameEnv(gym.Env):
     def _setup_game_local(self, seed=None):
         self.rules = ru
         # self.rules['generator_rules']['river_rules']['has_river'] = False
-        self.rules['generator_rules']['walls']['has_walls'] = False
+        # self.rules['generator_rules']['walls']['has_walls'] = False
         # self.rules['generator_rules']['exits_amount'] = 20
         self.rules['generator_rules']['rows'] = self.size
         self.rules['generator_rules']['cols'] = self.size
@@ -138,11 +139,20 @@ class MazeGameEnv(gym.Env):
         return True
 
     def action_masks(self):
-        act_pl_abilities = self.game.get_allowed_abilities(self.game.get_current_player())
-        mask = [
-            True if act_pl_abilities.get(self._action_space_to_action[action][0]) else False
-            for action in self.actions
-        ]
+        current_player = self.game.get_current_player()
+        act_pl_abilities = self.game.get_allowed_abilities(current_player)
+        # mask = [
+        #     True if act_pl_abilities.get(self._action_space_to_action[action][0]) else False
+        #     for action in self.actions
+        # ]
+        mask = [False] * len(self.actions)
+        mask[-1] = act_pl_abilities.get(Acts.swap_treasure)
+        for i, direction in enumerate(Directions):
+            wall = current_player.cell.walls[direction]
+            mask[i] = not wall.player_collision
+            if act_pl_abilities.get(Acts.throw_bomb):
+                mask[4+i] = wall.breakable and type(wall) is not w.WallEmpty
+
         return mask
 
     def _get_obs(self):
@@ -242,8 +252,7 @@ class MazeGameEnv(gym.Env):
             pygame.quit()
 
     def _get_field(self):
-        # return encode(self.game.field.game_map, self.game.field.treasures, *self._get_agent_location())
-        return encode(self.game.field.game_map, self.game.field.treasures)
+        return one_hot_encode(self.game.field.game_map, self.game.field.treasures)
 
     def _get_agent_location(self):
         x, y = self.game.get_current_player().cell.position.get()

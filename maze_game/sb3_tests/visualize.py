@@ -18,6 +18,7 @@ def visualize():
         while True:
             action_masks = get_action_masks(env)
             action, _states = model.predict(obs, action_masks=action_masks)
+            # action, _states = model.predict(obs)
             obs, reward, terminated, truncated, info = env.step(int(action))
             print(info)
             env.render()

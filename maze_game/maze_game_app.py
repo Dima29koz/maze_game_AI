@@ -12,6 +12,7 @@ def run_random_with_mask(env: MazeGameEnv | Env):
         mask = np.array(env.action_masks(), dtype=np.int8)
         action = env.action_space.sample(mask=mask)
         obs, reward, done, _, info = env.step(action)
+        print(info)
         env.render()
 
 

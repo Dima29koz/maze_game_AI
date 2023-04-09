@@ -1,5 +1,6 @@
 """runs game local for testing game_engine"""
 import random
+import threading
 from typing import Generator
 import requests
 
@@ -127,24 +128,26 @@ class LocalGame:
         return True
 
 
-def draw_graph(grid: Grid):
-    gb = test_graph(grid)
-    while True:
-        try:
-            p1 = Position(*[int(i) for i in input('p1: (x, y):').split(',')])
-            p2 = Position(*[int(i) for i in input('p2: (x, y):').split(',')])
-            gb.get_path(grid.get_cell(p1), grid.get_cell(p2))
-        except Exception:
-            print('stopped')
-            break
+def draw_graph(grid: Grid, player_cell=None, player_abilities=None):
+    gb = test_graph(grid, player_cell, player_abilities)
+    # while True:
+    #     try:
+    #         p1 = Position(*[int(i) for i in input('p1: (x, y):').split(',')])
+    #         p2 = Position(*[int(i) for i in input('p2: (x, y):').split(',')])
+    #         gb.get_path(grid.get_cell(p1), grid.get_cell(p2))
+    #     except Exception:
+    #         print('stopped')
+    #         break
 
 
 def main(room_id: int = None, server_url: str = '', with_bot: bool = True):
     game = LocalGame(room_id, server_url, with_bot)
     start_map = Grid(game.game.field.game_map.get_level(LevelPosition(0, 0, 0)).field)
+    current_player = game.game.get_current_player()
+    current_player_abilities = game.game.get_allowed_abilities(current_player)
     game.run(auto=True)
     # tr1 = threading.Thread(target=game.run, kwargs={'auto': True})
-    # tr2 = threading.Thread(target=draw_graph, args=(start_map,))
+    # tr2 = threading.Thread(target=draw_graph, args=(start_map, current_player.cell, current_player_abilities))
     # tr1.start()
     # tr2.start()
 

@@ -20,7 +20,7 @@ def visualize():
             action, _states = model.predict(obs, action_masks=action_masks)
             # action, _states = model.predict(obs)
             obs, reward, terminated, truncated, info = env.step(int(action))
-            print(info)
+            print(info, reward)
             env.render()
             done = terminated | truncated
             if terminated:

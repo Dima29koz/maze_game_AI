@@ -8,12 +8,13 @@ from maze_game import MazeGameEnv
 from maze_game.sb3_tests.maze_cnn import MazeCNN
 
 cnn = nn.Sequential(
-    nn.Conv2d(26, 64, (3, 3), padding=1),
+    nn.Conv3d(26, 64, (1, 3, 3), padding=(0, 1, 1)),
     nn.Tanh(),
-    nn.Conv2d(64, 128, (3, 3), padding=1),
+    nn.MaxPool3d((2, 2, 2)),
+    nn.Conv3d(64, 128, (1, 3, 3), padding=(0, 1, 1)),
     nn.Tanh(),
-    nn.MaxPool2d((2, 2)),
-    nn.Conv2d(128, 256, (3, 3)),
+    nn.MaxPool3d((2, 1, 1)),
+    nn.Conv3d(128, 256, (1, 3, 3), padding=0),
     nn.Tanh(),
     nn.Flatten(),
 )
@@ -29,8 +30,10 @@ def test_cnn(env: MazeGameEnv | Env):
     obs, info = env.reset()
     field = torch.Tensor(obs['field'])
     stats = torch.Tensor(obs['stats'])
-    # res = cnn(field)
-    res = sts(stats)
+    res = cnn(field)
+    # res = sts(stats)
+    model_parameters = filter(lambda p: p.requires_grad, cnn.parameters())
+    params = sum([np.prod(p.size()) for p in model_parameters])
     print(res)
 
 

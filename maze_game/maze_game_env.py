@@ -8,7 +8,7 @@ from gymnasium import spaces
 import pygame
 import numpy as np
 
-from maze_game.game_map_encoder import encode, one_hot_encode
+from maze_game.game_map_encoder import one_hot_encode
 from maze_game.game_core import SpectatorGUI, Game, Directions, Actions as Acts
 from maze_game.game_core import base_rules as ru
 from maze_game.game_core.game_engine.field import wall as w
@@ -63,7 +63,7 @@ class MazeGameEnv(gym.Env):
         field_observation_space = spaces.Box(
             low=0,
             high=2,
-            shape=(26, self.size + 2, self.size + 2),
+            shape=(26, 4, self.size + 2, self.size + 2),
             dtype=np.uint8,
         )
         self.observation_space = spaces.Dict(
@@ -99,17 +99,13 @@ class MazeGameEnv(gym.Env):
         self.rules = ru
         # self.rules['generator_rules']['river_rules']['has_river'] = False
         # self.rules['generator_rules']['walls']['has_walls'] = False
-        # self.rules['generator_rules']['exits_amount'] = 20
         self.rules['generator_rules']['rows'] = self.size
         self.rules['generator_rules']['cols'] = self.size
         self.rules['generator_rules']['is_separated_armory'] = True
         self.rules['generator_rules']['seed'] = random.random() if seed is None else seed
         # self.rules['generator_rules']['seed'] = 1
-        # self.rules['generator_rules']['levels_amount'] = 2
         self.rules['gameplay_rules']['fast_win'] = False
         self.rules['gameplay_rules']['diff_outer_concrete_walls'] = True
-        # self.rules['generator_rules']['river_rules']['min_coverage'] = 90
-        # self.rules['generator_rules']['river_rules']['max_coverage'] = 100
         # spawn: dict[str, int] = {'x': 5, 'y': 3}
         spawn: dict[str, int] = {'x': random.randint(1, self.size), 'y': random.randint(1, self.size)}
         spawn2: dict[str, int] = {'x': 2, 'y': 4}
@@ -206,6 +202,7 @@ class MazeGameEnv(gym.Env):
             self.last_stats_observations.append(observation['stats'])
 
         observation['stats'] = np.array(self.last_stats_observations).transpose()
+        observation['field'] = np.array(self.last_field_observations).transpose((1, 0, 2, 3))
         return observation, info
 
     def step(self, action):
@@ -239,6 +236,7 @@ class MazeGameEnv(gym.Env):
         self.last_field_observations.append(observation['field'])
         self.last_stats_observations.append(observation['stats'])
         observation['stats'] = np.array(self.last_stats_observations).transpose()
+        observation['field'] = np.array(self.last_field_observations).transpose((1, 0, 2, 3))
         return observation, reward, terminated, truncated, info
 
     def _reward(self) -> float:

@@ -3,11 +3,12 @@ from sb3_contrib import MaskablePPO
 from sb3_contrib.common.maskable.utils import get_action_masks
 
 from maze_game import MazeGameEnv
+from maze_game.sb3_tests import config as conf
 
 
 def visualize():
     env = gym.make('env_maze/MazeGame-v0', render_mode='human')
-    model = MaskablePPO.load("storage/ppo_MazeGame", env=env)
+    model = MaskablePPO.load(f"{conf.root_path}/{conf.model_name}_{conf.run_id}/model", env=env)
 
     sum_reward = 0
     eps = 0

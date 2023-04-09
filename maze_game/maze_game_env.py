@@ -1,6 +1,7 @@
 from enum import IntEnum
 import random
 from typing import Generator
+from collections import deque
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -44,6 +45,8 @@ class MazeGameEnv(gym.Env):
         self.rules = {}
         self.players = []
         self.turns: list | Generator = []
+        self.last_field_observations = deque(maxlen=4)
+        self.last_stats_observations = deque(maxlen=4)
 
         self.step_count = 0
 
@@ -66,7 +69,7 @@ class MazeGameEnv(gym.Env):
         self.observation_space = spaces.Dict(
             {
                 "field": field_observation_space,
-                "stats": spaces.Box(0, 7, shape=(6,), dtype=np.uint8),
+                "stats": spaces.Box(0, 7, shape=(6, 4), dtype=np.float32),
             }
         )
 
@@ -107,7 +110,8 @@ class MazeGameEnv(gym.Env):
         self.rules['gameplay_rules']['diff_outer_concrete_walls'] = True
         # self.rules['generator_rules']['river_rules']['min_coverage'] = 90
         # self.rules['generator_rules']['river_rules']['max_coverage'] = 100
-        spawn: dict[str, int] = {'x': 5, 'y': 3}
+        # spawn: dict[str, int] = {'x': 5, 'y': 3}
+        spawn: dict[str, int] = {'x': random.randint(1, self.size), 'y': random.randint(1, self.size)}
         spawn2: dict[str, int] = {'x': 2, 'y': 4}
         spawn3: dict[str, int] = {'x': 2, 'y': 1}
 
@@ -151,7 +155,7 @@ class MazeGameEnv(gym.Env):
             wall = current_player.cell.walls[direction]
             mask[i] = not wall.player_collision
             if act_pl_abilities.get(Acts.throw_bomb):
-                mask[4+i] = wall.breakable and type(wall) is not w.WallEmpty
+                mask[4 + i] = wall.breakable and type(wall) is not w.WallEmpty
 
         return mask
 
@@ -197,6 +201,11 @@ class MazeGameEnv(gym.Env):
                 self.gui = SpectatorGUI(self.game.field, None, self.metadata["render_fps"])
             self.gui.field = field
 
+        for _ in range(4):
+            self.last_field_observations.append(observation['field'])
+            self.last_stats_observations.append(observation['stats'])
+
+        observation['stats'] = np.array(self.last_stats_observations).transpose()
         return observation, info
 
     def step(self, action):
@@ -226,6 +235,10 @@ class MazeGameEnv(gym.Env):
         if self.step_count >= self.max_steps:
             truncated = True
             info["TimeLimit.truncated"] = True
+
+        self.last_field_observations.append(observation['field'])
+        self.last_stats_observations.append(observation['stats'])
+        observation['stats'] = np.array(self.last_stats_observations).transpose()
         return observation, reward, terminated, truncated, info
 
     def _reward(self) -> float:
@@ -262,7 +275,10 @@ class MazeGameEnv(gym.Env):
         player = self.game.get_current_player()
         return np.array(
             [
-                player.health, player.arrows, player.bombs, 1 if player.treasure else 0,
+                player.health / player.health_max,
+                player.arrows / player.arrows_max,
+                player.bombs / player.bombs_max,
+                1 if player.treasure else 0,
                 *self._get_agent_location()
             ],
-            dtype=np.uint8)
+            dtype=np.float32)

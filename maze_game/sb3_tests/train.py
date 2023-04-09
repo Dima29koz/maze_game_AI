@@ -48,6 +48,7 @@ def train(checkpoint=False):
         n_steps=128,
         ent_coef=0.01,
         vf_coef=0.25,
+        clip_range=0.2,
     )
     learn_kwargs = dict(
         total_timesteps=1_000_000

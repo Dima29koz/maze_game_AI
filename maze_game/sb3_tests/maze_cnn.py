@@ -69,10 +69,29 @@ class MazeCNN(BaseFeaturesExtractor):
         with th.no_grad():
             n_flatten = self.cnn(th.as_tensor(observation_space.sample()[None]).float()).shape[1]
 
-        self.linear = nn.Sequential(
-            nn.Linear(n_flatten, features_dim),
-            nn.ReLU()
+        # self.linear = nn.Sequential(
+        #     nn.Linear(n_flatten, features_dim),
+        #     nn.ReLU()
+        # )
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        # return self.linear(self.cnn(observations))
+        return self.cnn(observations)
+
+
+class StatsCNN(BaseFeaturesExtractor):
+    def __init__(
+            self,
+            observation_space: gym.Space,
+            features_dim: int = 12
+    ) -> None:
+        super().__init__(observation_space, features_dim)
+        # We assume CxW observations (channels first)
+
+        self.cnn = nn.Sequential(
+            nn.Conv1d(6, 12, 4),
+            nn.Flatten(),
         )
 
     def forward(self, observations: th.Tensor) -> th.Tensor:
-        return self.linear(self.cnn(observations))
+        return self.cnn(observations)

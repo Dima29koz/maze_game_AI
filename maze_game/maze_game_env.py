@@ -37,7 +37,7 @@ class MazeGameEnv(gym.Env):
         # get info
         # info = 5
 
-    def __init__(self, render_mode=None, size=5, max_steps=250):
+    def __init__(self, render_mode=None, size=5, max_steps=250, seed=None):
         self.size = size
         self.max_steps = max_steps
 
@@ -45,14 +45,15 @@ class MazeGameEnv(gym.Env):
         self.rules = {}
         self.players = []
         self.turns: list | Generator = []
-        self.last_field_observations = deque(maxlen=4)
+
+        self.last_walls_observations = deque(maxlen=4)
         self.last_stats_observations = deque(maxlen=4)
 
         self.step_count = 0
 
         self.response = None
 
-        self._setup_game_local()
+        self._setup_game_local(seed=seed)
         self.game = Game(rules=self.rules)
         field = self.game.field
         for i, player in enumerate(self.players, 1):
@@ -62,13 +63,28 @@ class MazeGameEnv(gym.Env):
 
         field_observation_space = spaces.Box(
             low=0,
-            high=2,
-            shape=(26, 4, self.size + 2, self.size + 2),
+            high=1,
+            shape=(13, self.size + 2, self.size + 2),
             dtype=np.uint8,
         )
+        walls_observation_space = spaces.Box(
+            low=0,
+            high=1,
+            shape=(12, 4, self.size + 2, self.size + 2),
+            dtype=np.uint8,
+        )
+        treasures_observation_space = spaces.Box(
+            low=0,
+            high=2,
+            shape=(1, self.size + 2, self.size + 2),
+            dtype=np.uint8,
+        )
+
         self.observation_space = spaces.Dict(
             {
                 "field": field_observation_space,
+                "walls": walls_observation_space,
+                "treasures": treasures_observation_space,
                 "stats": spaces.Box(0, 7, shape=(6, 4), dtype=np.float32),
             }
         )
@@ -141,10 +157,7 @@ class MazeGameEnv(gym.Env):
     def action_masks(self):
         current_player = self.game.get_current_player()
         act_pl_abilities = self.game.get_allowed_abilities(current_player)
-        # mask = [
-        #     True if act_pl_abilities.get(self._action_space_to_action[action][0]) else False
-        #     for action in self.actions
-        # ]
+
         mask = [False] * len(self.actions)
         mask[-1] = act_pl_abilities.get(Acts.swap_treasure)
         for i, direction in enumerate(Directions):
@@ -156,8 +169,11 @@ class MazeGameEnv(gym.Env):
         return mask
 
     def _get_obs(self):
+        field, walls, treasures = self._get_field()
         return {
-            "field": self._get_field(),
+            "field": field,
+            "walls": walls,
+            "treasures": treasures,
             "stats": self._get_stats(),
         }
 
@@ -198,11 +214,11 @@ class MazeGameEnv(gym.Env):
             self.gui.field = field
 
         for _ in range(4):
-            self.last_field_observations.append(observation['field'])
+            self.last_walls_observations.append(observation['walls'])
             self.last_stats_observations.append(observation['stats'])
 
         observation['stats'] = np.array(self.last_stats_observations).transpose()
-        observation['field'] = np.array(self.last_field_observations).transpose((1, 0, 2, 3))
+        observation['walls'] = np.array(self.last_walls_observations).transpose((1, 0, 2, 3))
         return observation, info
 
     def step(self, action):
@@ -233,10 +249,10 @@ class MazeGameEnv(gym.Env):
             truncated = True
             info["TimeLimit.truncated"] = True
 
-        self.last_field_observations.append(observation['field'])
+        self.last_walls_observations.append(observation['walls'])
         self.last_stats_observations.append(observation['stats'])
+        observation['walls'] = np.array(self.last_walls_observations).transpose((1, 0, 2, 3))
         observation['stats'] = np.array(self.last_stats_observations).transpose()
-        observation['field'] = np.array(self.last_field_observations).transpose((1, 0, 2, 3))
         return observation, reward, terminated, truncated, info
 
     def _reward(self) -> float:

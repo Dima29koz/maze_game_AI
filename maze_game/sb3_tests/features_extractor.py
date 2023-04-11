@@ -7,7 +7,7 @@ from gymnasium import spaces
 from stable_baselines3.common.preprocessing import get_flattened_obs_dim
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-from maze_game.sb3_tests.maze_cnn import MazeCNN, StatsCNN
+from maze_game.sb3_tests.maze_cnn import MazeCNN, StatsCNN, WallsCNN, TreasuresCNN
 
 
 class CustomCombinedExtractor(BaseFeaturesExtractor):
@@ -23,10 +23,16 @@ class CustomCombinedExtractor(BaseFeaturesExtractor):
         total_concat_size = 0
         for key, subspace in observation_space.spaces.items():
             if key == "field":
-                extractors[key] = MazeCNN(subspace, features_dim=cnn_output_dim)
-                total_concat_size += cnn_output_dim
+                extractors[key] = MazeCNN(subspace, features_dim=256)
+                total_concat_size += 128
+            elif key == "walls":
+                extractors[key] = WallsCNN(subspace, features_dim=256)
+                total_concat_size += 128
+            elif key == "treasures":
+                extractors[key] = TreasuresCNN(subspace, features_dim=32)
+                total_concat_size += 32
             elif key == "stats":
-                extractors[key] = StatsCNN(subspace, 12)
+                extractors[key] = StatsCNN(subspace, features_dim=12)
                 total_concat_size += 12
             else:
                 # Run through a simple MLP

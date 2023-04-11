@@ -14,7 +14,7 @@ class MazeCNN(BaseFeaturesExtractor):
     def __init__(
         self,
         observation_space: gym.Space,
-        features_dim: int = 512
+        features_dim: int = 256
     ) -> None:
 
         super().__init__(observation_space, features_dim)
@@ -22,48 +22,14 @@ class MazeCNN(BaseFeaturesExtractor):
 
         n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
-            nn.Conv3d(n_input_channels, 64, (1, 3, 3), padding=(0, 1, 1)),
+            nn.Conv2d(n_input_channels, 32, (3, 3), padding=(1, 1)),
             nn.Tanh(),
-            nn.MaxPool3d((2, 2, 2)),
-            nn.Conv3d(64, 128, (1, 3, 3), padding=(0, 1, 1)),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(32, 64, (3, 3), padding=(1, 1)),
             nn.Tanh(),
-            nn.MaxPool3d((2, 1, 1)),
-            nn.Conv3d(128, 256, (1, 3, 3), padding=0),
+            nn.Conv2d(64, 128, (3, 3), padding=0),
             nn.Tanh(),
             nn.Flatten(),
-            # nn.Conv2d(n_input_channels, 64, (3, 3), padding=1),  # 64 7 7
-            # nn.Sigmoid(),
-            # nn.MaxPool2d((2, 2)),  # 64 3 3
-            # nn.Conv2d(64, 128, (3, 3), padding=1),  # 128 3 3
-            # nn.Sigmoid(),
-            # nn.Conv2d(128, 256, (2, 2)),  # 64 3 3
-            # nn.Sigmoid(),
-            # nn.Conv2d(256, 512, (2, 2)),
-            # nn.Sigmoid(),
-            # nn.Flatten(),
-            # nn.Conv2d(n_input_channels, 64, (3, 3), padding=1),  # 16 7 7
-            # # nn.Tanh(),
-            # nn.Sigmoid(),
-            # nn.Conv2d(64, 128, (3, 3), padding=1),  # 32 7 7
-            # # nn.Tanh(),
-            # nn.Sigmoid(),
-            # nn.MaxPool2d((2, 2)),  # 32 3 3
-            # nn.Conv2d(128, 256, (3, 3), padding=1),  # 64 3 3
-            # # nn.Tanh(),
-            # nn.Sigmoid(),
-            # nn.Conv2d(256, 512, (3, 3), padding=1),
-            # # nn.Tanh(),
-            # nn.Sigmoid(),
-            # nn.MaxPool2d((2, 2)),  # 128 1 1
-            # nn.Flatten(),
-            # nn.Conv2d(n_input_channels, 16, (2, 2)),
-            # nn.Tanh(),
-            # nn.MaxPool2d((2, 2)),
-            # nn.Conv2d(16, 32, (2, 2)),
-            # nn.Tanh(),
-            # nn.Conv2d(32, 64, (2, 2)),
-            # nn.Tanh(),
-            # nn.Flatten(),
         )
 
         # Compute shape by doing one forward pass
@@ -89,8 +55,60 @@ class StatsCNN(BaseFeaturesExtractor):
         super().__init__(observation_space, features_dim)
         # We assume CxW observations (channels first)
 
+        n_input_channels = observation_space.shape[0]
         self.cnn = nn.Sequential(
-            nn.Conv1d(6, 12, 4),
+            nn.Conv1d(n_input_channels, features_dim, 4),
+            nn.Flatten(),
+        )
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        return self.cnn(observations)
+
+
+class WallsCNN(BaseFeaturesExtractor):
+    def __init__(
+            self,
+            observation_space: gym.Space,
+            features_dim: int = 256
+    ) -> None:
+        super().__init__(observation_space, features_dim)
+        # We assume CxW observations (channels first)
+
+        n_input_channels = observation_space.shape[0]
+        self.cnn = nn.Sequential(
+            nn.Conv3d(n_input_channels, 32, (1, 3, 3), padding=(0, 1, 1)),
+            nn.Tanh(),
+            nn.MaxPool3d((2, 2, 2)),
+            nn.Conv3d(32, 64, (1, 3, 3), padding=(0, 1, 1)),
+            nn.Tanh(),
+            nn.MaxPool3d((2, 1, 1)),
+            nn.Conv3d(64, 128, (1, 3, 3), padding=0),
+            nn.Tanh(),
+            nn.Flatten(),
+        )
+
+    def forward(self, observations: th.Tensor) -> th.Tensor:
+        return self.cnn(observations)
+
+
+class TreasuresCNN(BaseFeaturesExtractor):
+    def __init__(
+            self,
+            observation_space: gym.Space,
+            features_dim: int = 32
+    ) -> None:
+        super().__init__(observation_space, features_dim)
+        # We assume CxW observations (channels first)
+
+        n_input_channels = observation_space.shape[0]
+        self.cnn = nn.Sequential(
+            nn.Conv2d(n_input_channels, 8, (3, 3), padding=(1, 1)),
+            nn.Tanh(),
+            nn.MaxPool2d((2, 2)),
+            nn.Conv2d(8, 16, (3, 3), padding=(1, 1)),
+            nn.Tanh(),
+            nn.Conv2d(16, 32, (3, 3), padding=0),
+            nn.Tanh(),
             nn.Flatten(),
         )
 

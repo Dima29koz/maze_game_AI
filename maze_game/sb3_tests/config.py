@@ -13,6 +13,10 @@ monitor_kwargs = dict(
     info_keywords=("is_success",)
 )
 
+env_kwargs = dict(
+    disable_env_checker=True,
+)
+
 policy_kwargs = dict(
     features_extractor_class=CustomCombinedExtractor,
     features_extractor_kwargs=dict(cnn_output_dim=256),
@@ -20,8 +24,8 @@ policy_kwargs = dict(
 )
 
 model_kwargs = dict(
-    learning_rate=linear_schedule(0.002),
-    # learning_rate=0.001,
+    # learning_rate=linear_schedule(0.002),
+    learning_rate=0.001,
     n_epochs=4,
     batch_size=512,
     n_steps=128,

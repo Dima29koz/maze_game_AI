@@ -70,25 +70,31 @@ def one_hot_encode(game_map: GameMap, treasures: list):
     rows = len(field[0])
     cols = len(field)
 
-    num_layers = 26
-    array = np.zeros((num_layers, rows, cols), dtype="uint8")
+    num_layers_cell = 13
+    num_layers_wall = 12
+    num_layers_treasure = 1
+
+    array_cells = np.zeros((num_layers_cell, rows, cols), dtype="uint8")
+    array_walls = np.zeros((num_layers_wall, rows, cols), dtype="uint8")
+    array_treasures = np.zeros((num_layers_treasure, rows, cols), dtype="uint8")
+
     for row in range(rows):
         for col in range(cols):
             obj = field[row][col]
 
             # 9 types of cell 0-8 + 4 river directions 9-12
             if type(obj) is not cell.CellRiver:
-                array[CELL_TO_IDX[type(obj)], row, col] = 1
+                array_cells[CELL_TO_IDX[type(obj)], row, col] = 1
             else:
-                array[8 + CELL_DIR_TO_IDX[obj.direction], row, col] = 1
+                array_cells[8 + CELL_DIR_TO_IDX[obj.direction], row, col] = 1
 
-            # 4*3 atr of wall 13-24
+            # 4*3 atr of wall
             for i, direction in enumerate(Directions):
-                array[13 + i*3, row, col] = int(obj.walls.get(direction).breakable)
-                array[14 + i*3, row, col] = int(obj.walls.get(direction).weapon_collision)
-                array[15 + i*3, row, col] = int(obj.walls.get(direction).player_collision)
+                array_walls[i*3, row, col] = int(obj.walls.get(direction).breakable)
+                array_walls[i*3, row, col] = int(obj.walls.get(direction).weapon_collision)
+                array_walls[i*3, row, col] = int(obj.walls.get(direction).player_collision)
 
     for treasure in treasures:
-        array[num_layers - 1, treasure.position.y, treasure.position.x] += 1
+        array_treasures[0, treasure.position.y, treasure.position.x] += 1
 
-    return array
+    return array_cells, array_walls, array_treasures

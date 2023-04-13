@@ -11,3 +11,5 @@ networkx~=3.0
 tqdm~=4.65.0
 sb3-contrib @ git+https://github.com/Stable-Baselines-Team/stable-baselines3-contrib@d561ae0b3a74880b2304e7aa798f84102d3f81bb
 stable-baselines3 @ git+https://github.com/DLR-RM/stable-baselines3@5e1f5076687a46ccf18a31dd6e58ba0e48b94650
+pettingzoo==1.22.4
+ray~=3.0.0.dev0

@@ -1,4 +1,5 @@
 import random
+from collections import deque
 
 import gymnasium
 import numpy as np
@@ -32,6 +33,7 @@ class MAMazeGameEnv(AECEnv):
     }
     _skip_agent_selection: str
     _agent_selector: agent_selector
+    game: Game
 
     def __init__(self, render_mode=None, size=5, max_steps=250, seed=None, num_players=1):
         super().__init__()
@@ -43,12 +45,18 @@ class MAMazeGameEnv(AECEnv):
         self.possible_agents = self.agents[:]
 
         self.gui: SpectatorGUI | None = None
-        self.game = None
         self.rules = {}
         self.players = []
         self.step_count = 0
 
-        self.reset(seed)
+        self.stacked_observations: dict[str, dict[str, deque]] = {
+            agent: {
+                "field": deque(maxlen=1),
+                "walls": deque(maxlen=4),
+                "stats": deque(maxlen=4),
+                "other_stats": deque(maxlen=4),
+            } for agent in self.agents
+        }
 
         self.action_spaces = {i: spaces.Discrete(len(Actions)) for i in self.agents}
 
@@ -77,12 +85,15 @@ class MAMazeGameEnv(AECEnv):
                     "field": field_observation_space,
                     "walls": walls_observation_space,
                     "treasures": treasures_observation_space,
-                    "stats": spaces.Box(0, 7, shape=(6, 4), dtype=np.float32),
+                    "stats": spaces.Box(0, self.size + 2, shape=(6, 4), dtype=np.float32),
+                    "other_stats": spaces.Box(0, self.size + 2, shape=(num_players-1, 6, 4), dtype=np.float32),
                     "action_mask": spaces.Box(low=0, high=1, shape=(len(Actions),), dtype=np.int8),
                 }
             )
             for i in self.agents
         }
+
+        self.reset(seed)
 
     def _setup_game_local(self, seed=None):
         self.rules = ru
@@ -104,6 +115,24 @@ class MAMazeGameEnv(AECEnv):
     def _make_init_turns(self):
         for _ in self.players:
             self._process_turn(Acts.info, None)
+
+    def _reset_stacked_obs(self):
+        for agent in self.agents:
+            field, walls, treasures = self._get_obs(agent)
+            observation: dict[str, np.ndarray] = {
+                "field": field,
+                "walls": walls,
+                "treasures": treasures,
+                "stats": self._get_stats(agent),
+                "other_stats": self._get_other_stats(agent),
+                "action_mask": self._action_masks(agent),
+            }
+
+            for key, obs in observation.items():
+                if key in self.stacked_observations[agent].keys():
+                    st_obs = self.stacked_observations[agent][key]
+                    for _ in range(st_obs.maxlen):
+                        st_obs.append(obs)
 
     def _process_turn(self, action: Acts, direction: Directions | None):
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
@@ -135,26 +164,39 @@ class MAMazeGameEnv(AECEnv):
             mask[i] = not wall.player_collision
             if act_pl_abilities.get(Acts.throw_bomb):
                 mask[4 + i] = wall.breakable and type(wall) is not w.WallEmpty
-
+            # todo shooting mask may be modified
             if act_pl_abilities.get(Acts.shoot_bow):
                 mask[8 + i] = not wall.weapon_collision
 
         return mask
 
-    def _get_obs(self):
+    def _get_obs(self, agent):
+        # todo custom observe for agents
         return one_hot_encode(self.game.field.game_map, self.game.field.treasures)
 
-    def _get_stats(self):
-        player = self.game.get_current_player()
+    def _get_other_stats(self, current_agent):
+        players_filter = filter(lambda pl: pl.name != current_agent, self.game.field.players)
         return np.array(
-            [
-                player.health / player.health_max,
-                player.arrows / player.arrows_max,
-                player.bombs / player.bombs_max,
-                1 if player.treasure else 0,
-                *self._get_agent_location()
-            ],
+            [self._get_player_stats(player) for player in players_filter],
             dtype=np.float32)
+
+    def _get_stats(self, agent):
+        player_filter = filter(lambda pl: pl.name == agent, self.game.field.players)
+        player = next(player_filter)
+        return np.array(
+            self._get_player_stats(player),
+            dtype=np.float32)
+
+    @staticmethod
+    def _get_player_stats(player):
+        return [
+            player.health / player.health_max,
+            player.arrows / player.arrows_max,
+            player.bombs / player.bombs_max,
+            1 if player.treasure else 0,
+            player.cell.position.x,
+            player.cell.position.y,
+        ]
 
     def _get_agent_location(self):
         x, y = self.game.get_current_player().cell.position.get()
@@ -164,13 +206,20 @@ class MAMazeGameEnv(AECEnv):
         return 1 - 0.9 * (self.step_count / self.max_steps)
 
     def observe(self, agent):
-        field, walls, treasures = self._get_obs()
+        st_obs = self.stacked_observations[agent]
+        field, walls, treasures = self._get_obs(agent)
+
+        st_obs['field'].append(field)
+        st_obs['walls'].append(walls)
+        st_obs['stats'].append(self._get_stats(agent))
+        st_obs['other_stats'].append(self._get_other_stats(agent))
 
         return {
-            "field": field,
-            "walls": walls,
+            "field": np.array(st_obs['field']).reshape((13, self.size + 2, self.size + 2)),
+            "walls": np.array(st_obs['walls']).transpose((1, 0, 2, 3)),
             "treasures": treasures,
-            "stats": self._get_stats(),
+            "stats": np.array(st_obs['stats']).transpose((1, 0)),
+            "other_stats": np.array(st_obs['other_stats']).transpose((1, 2, 0)),
             "action_mask": self._action_masks(agent),
         }
 
@@ -183,6 +232,7 @@ class MAMazeGameEnv(AECEnv):
     def step(self, action):
         self.step_count += 1
         current_agent = self.agent_selection
+        self.rewards[current_agent] = 0
         if (
                 self.truncations[current_agent]
                 or self.terminations[current_agent]
@@ -196,7 +246,11 @@ class MAMazeGameEnv(AECEnv):
 
         if act[0] is Acts.swap_treasure and current_player.treasure is None:
             self.rewards[current_agent] = self._reward()
+        # todo add reward for success shooting
         is_running = self._process_turn(*act)
+
+        if self.step_count >= self.max_steps * len(self.possible_agents):
+            self.truncations = {i: True for i in self.agents}
 
         # check if there is a winner
         if not is_running:
@@ -231,6 +285,7 @@ class MAMazeGameEnv(AECEnv):
             self.game.field.spawn_player(*player, turn=i)
 
         self._make_init_turns()
+        self._reset_stacked_obs()
 
     def render(self):
         if self.render_mode is None:

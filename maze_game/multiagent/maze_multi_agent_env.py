@@ -15,8 +15,8 @@ from maze_game.game_map_encoder import one_hot_encode
 from maze_game.multiagent.actions import Actions, action_space_to_action
 
 
-def create_env(render_mode=None):
-    env = MAMazeGameEnv(render_mode=render_mode)
+def create_env(render_mode=None, **kwargs):
+    env = MAMazeGameEnv(render_mode=render_mode, **kwargs)
     env = wrappers.TerminateIllegalWrapper(env, illegal_reward=-1)
     env = wrappers.AssertOutOfBoundsWrapper(env)
     env = wrappers.OrderEnforcingWrapper(env)
@@ -30,28 +30,25 @@ class MAMazeGameEnv(AECEnv):
         "is_parallelizable": False,
         "render_fps": 2,
     }
+    _skip_agent_selection: str
+    _agent_selector: agent_selector
 
-    def __init__(self, render_mode=None, size=5, max_steps=250, seed=None):
+    def __init__(self, render_mode=None, size=5, max_steps=250, seed=None, num_players=1):
         super().__init__()
         self.size = size
         self.max_steps = max_steps
         self.render_mode = render_mode
 
+        self.agents = [f"player_{i}" for i in range(num_players)]
+        self.possible_agents = self.agents[:]
+
         self.gui: SpectatorGUI | None = None
+        self.game = None
         self.rules = {}
         self.players = []
         self.step_count = 0
 
-        self._setup_game_local(seed=seed)
-        self.game = Game(rules=self.rules)
-        field = self.game.field
-        for i, player in enumerate(self.players, 1):
-            field.spawn_player(*player, turn=i)
-
-        self._make_init_turns()
-
-        self.agents = [f"player_{i}" for i in range(len(self.players))]
-        self.possible_agents = self.agents[:]
+        self.reset(seed)
 
         self.action_spaces = {i: spaces.Discrete(len(Actions)) for i in self.agents}
 
@@ -95,18 +92,14 @@ class MAMazeGameEnv(AECEnv):
         self.rules['generator_rules']['cols'] = self.size
         self.rules['generator_rules']['is_separated_armory'] = True
         self.rules['generator_rules']['seed'] = random.random() if seed is None else seed
-        # self.rules['generator_rules']['seed'] = 1
-        self.rules['gameplay_rules']['fast_win'] = False
+        # self.rules['gameplay_rules']['fast_win'] = False
         self.rules['gameplay_rules']['diff_outer_concrete_walls'] = True
-        spawn: dict[str, int] = {'x': random.randint(1, self.size), 'y': random.randint(1, self.size)}
-        # spawn2: dict[str, int] = {'x': random.randint(1, self.size), 'y': random.randint(1, self.size)}
-        # spawn3: dict[str, int] = {'x': random.randint(1, self.size), 'y': random.randint(1, self.size)}
 
-        self.players = [
-            (spawn, 'Skipper'),
-            # (spawn2, 'Tester'),
-            # (spawn3, 'player'),
-        ]
+    def _create_players(self):
+        return [(self._create_spawn(), agent) for agent in self.agents]
+
+    def _create_spawn(self) -> dict[str, int]:
+        return {'x': random.randint(1, self.size), 'y': random.randint(1, self.size)}
 
     def _make_init_turns(self):
         for _ in self.players:
@@ -115,25 +108,36 @@ class MAMazeGameEnv(AECEnv):
     def _process_turn(self, action: Acts, direction: Directions | None):
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
         if response is not None:
-            self.response = response
+            self.infos[self.agent_selection] = {
+                'turn_info': response.get_turn_info(),
+                'resp': response.get_info(),
+            }
+            dead_agents = response.get_raw_info().get('response', {}).get('dead_pls', [])
+            for agent in dead_agents:
+                self.truncations[agent] = True
         if self.game.is_win_condition(self.rules):
             return False
+        if action is not Acts.swap_treasure:
+            self.agent_selection = self._agent_selector.next()
         return True
 
     def _action_masks(self, agent):
-        mask = np.zeros(len(Actions), np.uint8)
+        mask = np.zeros(len(Actions), np.int8)
         if agent != self.agent_selection:
             return mask
 
         current_player = self.game.get_current_player()
         act_pl_abilities = self.game.get_allowed_abilities(current_player)
 
-        mask[-1] = act_pl_abilities.get(Acts.swap_treasure)
-        for i, direction in enumerate(Directions):
+        mask[0] = act_pl_abilities.get(Acts.swap_treasure)
+        for i, direction in enumerate(Directions, 1):
             wall = current_player.cell.walls[direction]
             mask[i] = not wall.player_collision
             if act_pl_abilities.get(Acts.throw_bomb):
                 mask[4 + i] = wall.breakable and type(wall) is not w.WallEmpty
+
+            if act_pl_abilities.get(Acts.shoot_bow):
+                mask[8 + i] = not wall.weapon_collision
 
         return mask
 
@@ -178,10 +182,12 @@ class MAMazeGameEnv(AECEnv):
 
     def step(self, action):
         self.step_count += 1
+        current_agent = self.agent_selection
         if (
-                self.truncations[self.agent_selection]
-                or self.terminations[self.agent_selection]
+                self.truncations[current_agent]
+                or self.terminations[current_agent]
         ):
+            self._skip_agent_selection = self._agent_selector.next()
             return self._was_dead_step(action)
         # assert valid move
         current_player = self.game.get_current_player()
@@ -189,34 +195,23 @@ class MAMazeGameEnv(AECEnv):
         assert self.game.get_allowed_abilities(current_player).get(act[0]) is True, "played illegal move."
 
         if act[0] is Acts.swap_treasure and current_player.treasure is None:
-            self.rewards[self.agent_selection] += self._reward()
+            self.rewards[current_agent] = self._reward()
         is_running = self._process_turn(*act)
-
-        next_agent = self._agent_selector.next()
 
         # check if there is a winner
         if not is_running:
             reward = self._reward()
-            self.rewards[self.agent_selection] += reward
-            self.rewards[next_agent] -= reward
+            self.rewards[current_agent] = reward
+            for agent in self.agents:
+                if agent != current_agent:
+                    self.rewards[agent] = -reward
             self.terminations = {i: True for i in self.agents}
-        else:
-            # no winner yet
-            self.agent_selection = next_agent
 
         self._accumulate_rewards()
 
     def reset(self, seed=None, options=None):
         # reset environment
         self.step_count = 0
-
-        self._setup_game_local(seed=seed)
-        self.game = Game(rules=self.rules)
-        field = self.game.field
-        for i, player in enumerate(self.players, 1):
-            field.spawn_player(*player, turn=i)
-
-        self._make_init_turns()
 
         self.agents = self.possible_agents[:]
         self.rewards = {i: 0 for i in self.agents}
@@ -228,6 +223,14 @@ class MAMazeGameEnv(AECEnv):
         self._agent_selector = agent_selector(self.agents)
 
         self.agent_selection = self._agent_selector.reset()
+
+        self._setup_game_local(seed=seed)
+        self.players = self._create_players()
+        self.game = Game(rules=self.rules)
+        for i, player in enumerate(self.players, 1):
+            self.game.field.spawn_player(*player, turn=i)
+
+        self._make_init_turns()
 
     def render(self):
         if self.render_mode is None:
@@ -242,7 +245,7 @@ class MAMazeGameEnv(AECEnv):
         if self.render_mode == "human":
             act_pl_abilities = self.game.get_allowed_abilities(self.game.get_current_player())
             self.gui.draw(act_pl_abilities, self.game.get_current_player().name)
-            self.gui.get_action({})
+            self.gui.get_action(act_pl_abilities)
 
     def close(self):
         if self.gui is not None:

@@ -78,15 +78,31 @@ class MAMazeGameEnv(AECEnv):
             shape=(1, self.size + 2, self.size + 2),
             dtype=np.uint8,
         )
+        stats_observation_space = spaces.Box(
+            low=0,
+            high=self.size + 2,
+            shape=(6, 4),
+            dtype=np.float32
+        )
+        other_stats_observation_space = spaces.Box(
+            low=0,
+            high=self.size + 2,
+            shape=(num_players - 1, 6, 4),
+            dtype=np.float32
+        )
 
         self.observation_spaces = {
             i: spaces.Dict(
                 {
-                    "field": field_observation_space,
-                    "walls": walls_observation_space,
-                    "treasures": treasures_observation_space,
-                    "stats": spaces.Box(0, self.size + 2, shape=(6, 4), dtype=np.float32),
-                    "other_stats": spaces.Box(0, self.size + 2, shape=(num_players-1, 6, 4), dtype=np.float32),
+                    "observation": spaces.Dict(
+                        {
+                            "field": field_observation_space,
+                            "walls": walls_observation_space,
+                            "treasures": treasures_observation_space,
+                            "stats": stats_observation_space,
+                            "other_stats": other_stats_observation_space,
+                        }
+                    ),
                     "action_mask": spaces.Box(low=0, high=1, shape=(len(Actions),), dtype=np.int8),
                 }
             )
@@ -215,11 +231,13 @@ class MAMazeGameEnv(AECEnv):
         st_obs['other_stats'].append(self._get_other_stats(agent))
 
         return {
-            "field": np.array(st_obs['field']).reshape((13, self.size + 2, self.size + 2)),
-            "walls": np.array(st_obs['walls']).transpose((1, 0, 2, 3)),
-            "treasures": treasures,
-            "stats": np.array(st_obs['stats']).transpose((1, 0)),
-            "other_stats": np.array(st_obs['other_stats']).transpose((1, 2, 0)),
+            "observation": {
+                "field": np.array(st_obs['field']).reshape((13, self.size + 2, self.size + 2)),
+                "walls": np.array(st_obs['walls']).transpose((1, 0, 2, 3)),
+                "treasures": treasures,
+                "stats": np.array(st_obs['stats']).transpose((1, 0)),
+                "other_stats": np.array(st_obs['other_stats']).transpose((1, 2, 0)),
+            },
             "action_mask": self._action_masks(agent),
         }
 

@@ -1,5 +1,3 @@
-import supersuit as ss
-
 from maze_game.multiagent.maze_multi_agent_env import MAMazeGameEnv, create_env
 from maze_game.multiagent.actions import action_to_action_space
 
@@ -17,8 +15,8 @@ def random_policy(env, agent, observation):
 
 
 def run(num_resets=1):
-    # env = create_env(render_mode="human", num_players=2)
-    env = MAMazeGameEnv(render_mode="human", num_players=4)
+    env = create_env(render_mode="human", num_players=2)
+    # env = MAMazeGameEnv(render_mode="human", num_players=4)
     env.metadata['render_fps'] = 10
     env.reset()
     env.render()

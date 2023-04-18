@@ -7,21 +7,16 @@ from ray.rllib.policy.policy import PolicySpec
 
 from ray.tune.registry import register_env
 
+from maze_game.multiagent.config import obs_space, act_space, env_name, num_players, policy_mapping_fn
 from maze_game.multiagent.maze_multi_agent_env import create_env
 from maze_game.multiagent.models.action_masking import TorchActionMaskModel
+
 
 if __name__ == "__main__":
     ray.init()
 
-    env_name = "maze_game_v2"
-    num_players = 2
-
     register_env(env_name, lambda conf: PettingZooEnv(create_env(num_players=num_players)))
     ModelCatalog.register_custom_model("pa_model", TorchActionMaskModel)
-
-    test_env = PettingZooEnv(create_env(num_players=num_players))
-    obs_space = test_env.observation_space
-    act_space = test_env.action_space
 
     def gen_policy():
         return PolicySpec(
@@ -30,15 +25,17 @@ if __name__ == "__main__":
             action_space=act_space,
         )
 
-    policies = {f"policy_{i}": gen_policy() for i in range(num_players)}
-
     config = (
         PPOConfig()
         .environment(env=env_name, clip_actions=True)
-        .rollouts(num_rollout_workers=4, rollout_fragment_length=128)
+        .rollouts(
+            num_rollout_workers=15,
+            create_env_on_local_worker=False,
+            rollout_fragment_length='auto',
+        )
         .training(
             train_batch_size=512,
-            lr=2e-5,
+            lr=0.001,
             gamma=0.99,
             lambda_=0.9,
             use_gae=True,
@@ -46,13 +43,13 @@ if __name__ == "__main__":
             grad_clip=None,
             entropy_coeff=0.1,
             vf_loss_coeff=0.25,
-            sgd_minibatch_size=64,
-            num_sgd_iter=10,
+            sgd_minibatch_size=512,
+            num_sgd_iter=4,
             model={'custom_model': 'pa_model'}
         )
         .multi_agent(
-            policies=policies,
-            policy_mapping_fn=lambda agent_id, *args, **kwargs: agent_id[-1],
+            policies={f"policy_{i}": gen_policy() for i in range(num_players)},
+            policy_mapping_fn=policy_mapping_fn,
         )
         .debugging(log_level="ERROR")
         .framework(framework="torch")
@@ -61,8 +58,10 @@ if __name__ == "__main__":
 
     tune.run(
         "PPO",
-        name="PPO",
-        stop={"timesteps_total": 100000},
-        checkpoint_freq=10,
+        name="maze_game_tune",
+        stop={"timesteps_total": 1_000_000},
+        checkpoint_freq=100,
+        keep_checkpoints_num=10,
         config=config.to_dict(),
+        sync_config=tune.SyncConfig(),
     )

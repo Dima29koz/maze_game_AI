@@ -4,12 +4,15 @@ from time import sleep
 import ray
 from ray.rllib.algorithms.ppo import PPO
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
+from ray.rllib.models import ModelCatalog
 from ray.tune.registry import register_env
 
 from pettingzoo.classic import connect_four_v3
 
+from other_examples.ray.connect4 import TorchActionMaskModel
 
 path_ = r"C:\Users\dima2\ray_results\PPO\PPO_connect_four_v3_7c198_00000_0_2023-04-15_15-24-36\checkpoint_000190"
+# path_ = r"C:\Users\dima2\ray_results\PPO\PPO_connect_four_v3_88e2a_00000_0_2023-04-17_18-43-01\checkpoint_000040"
 checkpoint_path = os.path.expanduser(path_)
 
 
@@ -22,6 +25,7 @@ if __name__ == "__main__":
     env = env_creator()
     env_name = "connect_four_v3"
     register_env(env_name, lambda config: PettingZooEnv(env_creator()))
+    ModelCatalog.register_custom_model("pa_model", TorchActionMaskModel)
 
     ray.init(local_mode=True, num_cpus=0)
     PPOAgent = PPO.from_checkpoint(checkpoint_path)

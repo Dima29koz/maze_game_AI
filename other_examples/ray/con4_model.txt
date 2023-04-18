@@ -1,0 +1,144 @@
+ComplexInputNetwork(
+  (cnns): ModuleDict(
+    (1): VisionNetwork(
+      (_convs): Sequential(
+        (0): SlimConv2d(
+          (_model): Sequential(
+            (0): Conv2d(2, 16, kernel_size=(2, 2), stride=(1, 1))
+            (1): ReLU()
+          )
+        )
+        (1): Flatten(start_dim=1, end_dim=-1)
+      )
+      (_value_branch_separate): Sequential(
+        (0): SlimConv2d(
+          (_model): Sequential(
+            (0): Conv2d(2, 16, kernel_size=(2, 2), stride=(1, 1))
+            (1): ReLU()
+          )
+        )
+        (1): SlimConv2d(
+          (_model): Sequential(
+            (0): Conv2d(16, 1, kernel_size=(1, 1), stride=(1, 1))
+          )
+        )
+      )
+    )
+  )
+  (one_hot): ModuleDict()
+  (flatten): ModuleDict(
+    (0): FullyConnectedNetwork(
+      (_hidden_layers): Sequential(
+        (0): SlimFC(
+          (_model): Sequential(
+            (0): Linear(in_features=7, out_features=256, bias=True)
+            (1): Tanh()
+          )
+        )
+        (1): SlimFC(
+          (_model): Sequential(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Tanh()
+          )
+        )
+      )
+      (_value_branch_separate): Sequential(
+        (0): SlimFC(
+          (_model): Sequential(
+            (0): Linear(in_features=7, out_features=256, bias=True)
+            (1): Tanh()
+          )
+        )
+        (1): SlimFC(
+          (_model): Sequential(
+            (0): Linear(in_features=256, out_features=256, bias=True)
+            (1): Tanh()
+          )
+        )
+      )
+      (_value_branch): SlimFC(
+        (_model): Sequential(
+          (0): Linear(in_features=256, out_features=1, bias=True)
+        )
+      )
+    )
+  )
+  (flatten_0): FullyConnectedNetwork(
+    (_hidden_layers): Sequential(
+      (0): SlimFC(
+        (_model): Sequential(
+          (0): Linear(in_features=7, out_features=256, bias=True)
+          (1): Tanh()
+        )
+      )
+      (1): SlimFC(
+        (_model): Sequential(
+          (0): Linear(in_features=256, out_features=256, bias=True)
+          (1): Tanh()
+        )
+      )
+    )
+    (_value_branch_separate): Sequential(
+      (0): SlimFC(
+        (_model): Sequential(
+          (0): Linear(in_features=7, out_features=256, bias=True)
+          (1): Tanh()
+        )
+      )
+      (1): SlimFC(
+        (_model): Sequential(
+          (0): Linear(in_features=256, out_features=256, bias=True)
+          (1): Tanh()
+        )
+      )
+    )
+    (_value_branch): SlimFC(
+      (_model): Sequential(
+        (0): Linear(in_features=256, out_features=1, bias=True)
+      )
+    )
+  )
+  (cnn_1): VisionNetwork(
+    (_convs): Sequential(
+      (0): SlimConv2d(
+        (_model): Sequential(
+          (0): Conv2d(2, 16, kernel_size=(2, 2), stride=(1, 1))
+          (1): ReLU()
+        )
+      )
+      (1): Flatten(start_dim=1, end_dim=-1)
+    )
+    (_value_branch_separate): Sequential(
+      (0): SlimConv2d(
+        (_model): Sequential(
+          (0): Conv2d(2, 16, kernel_size=(2, 2), stride=(1, 1))
+          (1): ReLU()
+        )
+      )
+      (1): SlimConv2d(
+        (_model): Sequential(
+          (0): Conv2d(16, 1, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+  )
+  (post_fc_stack): FullyConnectedNetwork(
+    (_hidden_layers): Sequential()
+    (_value_branch_separate): Sequential()
+    (_value_branch): SlimFC(
+      (_model): Sequential(
+        (0): Linear(in_features=736, out_features=1, bias=True)
+      )
+    )
+  )
+  (logits_layer): SlimFC(
+    (_model): Sequential(
+      (0): Linear(in_features=736, out_features=7, bias=True)
+    )
+  )
+  (value_layer): SlimFC(
+    (_model): Sequential(
+      (0): Linear(in_features=736, out_features=1, bias=True)
+    )
+  )
+)

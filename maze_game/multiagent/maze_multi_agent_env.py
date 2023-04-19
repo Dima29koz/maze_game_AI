@@ -14,6 +14,7 @@ from maze_game.game_core import base_rules as ru
 from maze_game.game_core.game_engine.field import wall as w
 from maze_game.game_map_encoder import one_hot_encode
 from maze_game.multiagent.actions import Actions, action_space_to_action
+from maze_game.multiagent.observation_wraper import LastObservationWrapper
 
 
 def create_env(render_mode=None, **kwargs):
@@ -21,6 +22,7 @@ def create_env(render_mode=None, **kwargs):
     env = wrappers.TerminateIllegalWrapper(env, illegal_reward=-1)
     env = wrappers.AssertOutOfBoundsWrapper(env)
     env = wrappers.OrderEnforcingWrapper(env)
+    env = LastObservationWrapper(env)
     return env
 
 
@@ -151,15 +153,34 @@ class MAMazeGameEnv(AECEnv):
                         st_obs.append(obs)
 
     def _process_turn(self, action: Acts, direction: Directions | None):
+        # assert valid move
+        current_player = self.game.get_current_player()
+        assert self.game.get_allowed_abilities(current_player).get(action) is True, "played illegal move."
+
+        if action is Acts.swap_treasure and current_player.treasure is None:
+            self.rewards[self.agent_selection] = self._reward()
+
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
         if response is not None:
             self.infos[self.agent_selection] = {
                 'turn_info': response.get_turn_info(),
                 'resp': response.get_info(),
             }
-            dead_agents = response.get_raw_info().get('response', {}).get('dead_pls', [])
-            for agent in dead_agents:
-                self.truncations[agent] = True
+            raw_info = response.get_raw_info().get('response', {})
+
+            if action is Acts.shoot_bow:
+                # contains all agents which were damaged (even if they were killed)
+                dmg_agents = set(raw_info.get('dmg_pls', []))
+                dead_agents = set(raw_info.get('dead_pls', []))
+                drop_agents = set(raw_info.get('drop_pls', []))
+                for agent in dead_agents:
+                    self.truncations[agent] = True
+                self.rewards[self.agent_selection] = self._reward_shoot(
+                    len(dmg_agents.difference(dead_agents)),
+                    len(dead_agents),
+                    len(drop_agents)
+                )
+
         if self.game.is_win_condition(self.rules):
             return False
         if action is not Acts.swap_treasure:
@@ -218,6 +239,11 @@ class MAMazeGameEnv(AECEnv):
         x, y = self.game.get_current_player().cell.position.get()
         return x, y
 
+    def _reward_shoot(self, num_dmg, num_dead, num_drop):
+        if num_dmg == 0:
+            return -0.5
+        return (num_dmg * 0.1 + num_dead * 1 + num_drop * 0.3) * (self.max_steps - self.step_count) / self.max_steps
+
     def _reward(self) -> float:
         return 1 - 0.9 * (self.step_count / self.max_steps)
 
@@ -257,14 +283,8 @@ class MAMazeGameEnv(AECEnv):
         ):
             self._skip_agent_selection = self._agent_selector.next()
             return self._was_dead_step(action)
-        # assert valid move
-        current_player = self.game.get_current_player()
-        act = action_space_to_action(action)
-        assert self.game.get_allowed_abilities(current_player).get(act[0]) is True, "played illegal move."
 
-        if act[0] is Acts.swap_treasure and current_player.treasure is None:
-            self.rewards[current_agent] = self._reward()
-        # todo add reward for success shooting
+        act = action_space_to_action(action)
         is_running = self._process_turn(*act)
 
         if self.step_count >= self.max_steps * len(self.possible_agents):
@@ -273,7 +293,7 @@ class MAMazeGameEnv(AECEnv):
         # check if there is a winner
         if not is_running:
             reward = self._reward()
-            self.rewards[current_agent] = reward
+            self.rewards[current_agent] += reward
             for agent in self.agents:
                 if agent != current_agent:
                     self.rewards[agent] = -reward

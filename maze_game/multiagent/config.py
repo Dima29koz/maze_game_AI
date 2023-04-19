@@ -21,3 +21,6 @@ def gen_policy():
 
 def policy_mapping_fn(agent_id, *args, **kwargs):
     return f'policy_{agent_id[-1]}'
+
+
+policies = {f"policy_{i}": gen_policy() for i in range(num_players)}

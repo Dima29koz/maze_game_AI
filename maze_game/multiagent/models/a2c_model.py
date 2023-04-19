@@ -48,20 +48,20 @@ class A2CNetwork(TorchModelV2, nn.Module):
         )
 
         post_fc_stack_config = {
-            "fcnet_hiddens": model_config.get("post_fcnet_hiddens", [64, 64]),
-            "fcnet_activation": model_config.get("post_fcnet_activation", "relu"),
+            "fcnet_hiddens": [256, 256],
+            "fcnet_activation": "tanh",
         }
         self.policy_net = FullyConnectedNetwork(
             Box(float("-inf"), float("inf"), shape=(self.internal_model.num_outputs,), dtype=np.float32),
             self.action_space,
-            self.internal_model.num_outputs,
+            256,
             post_fc_stack_config,
             name="policy_net",
         )
         self.value_net = FullyConnectedNetwork(
             Box(float("-inf"), float("inf"), shape=(self.internal_model.num_outputs,), dtype=np.float32),
             self.action_space,
-            self.internal_model.num_outputs,
+            256,
             post_fc_stack_config,
             name="value_net",
         )

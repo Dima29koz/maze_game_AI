@@ -3,27 +3,19 @@ from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
 from ray.rllib.models import ModelCatalog
-from ray.rllib.policy.policy import PolicySpec
 
 from ray.tune.registry import register_env
 
-from maze_game.multiagent.config import obs_space, act_space, env_name, num_players, policy_mapping_fn
+from maze_game.multiagent.config import env_name, num_players, policy_mapping_fn, policies
 from maze_game.multiagent.maze_multi_agent_env import create_env
 from maze_game.multiagent.models.action_masking import TorchActionMaskModel
 
 
 if __name__ == "__main__":
-    ray.init()
+    ray.init(num_cpus=16)
 
     register_env(env_name, lambda conf: PettingZooEnv(create_env(num_players=num_players)))
     ModelCatalog.register_custom_model("pa_model", TorchActionMaskModel)
-
-    def gen_policy():
-        return PolicySpec(
-            policy_class=None,  # infer automatically from Algorithm
-            observation_space=obs_space,
-            action_space=act_space,
-        )
 
     config = (
         PPOConfig()
@@ -48,7 +40,7 @@ if __name__ == "__main__":
             model={'custom_model': 'pa_model'}
         )
         .multi_agent(
-            policies={f"policy_{i}": gen_policy() for i in range(num_players)},
+            policies=policies,
             policy_mapping_fn=policy_mapping_fn,
         )
         .debugging(log_level="ERROR")
@@ -62,6 +54,9 @@ if __name__ == "__main__":
         stop={"timesteps_total": 1_000_000},
         checkpoint_freq=100,
         keep_checkpoints_num=10,
+        checkpoint_at_end=True,
         config=config.to_dict(),
-        sync_config=tune.SyncConfig(),
+        sync_config=tune.SyncConfig(
+            sync_on_checkpoint=False
+        ),
     )

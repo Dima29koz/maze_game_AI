@@ -1,3 +1,4 @@
+import argparse
 import os
 
 import ray
@@ -10,6 +11,10 @@ from maze_game.multiagent.config import policy_mapping_fn, policies
 from maze_game.multiagent.maze_multi_agent_env import MAMazeGameEnv, create_env
 from maze_game.multiagent.actions import action_to_action_space
 from maze_game.multiagent.models.action_masking import TorchActionMaskModel
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--path", help="checkpoint path")
 
 
 def manual_policy(env, agent=None, observation=None):
@@ -40,13 +45,13 @@ def run(num_resets=1):
     register_env(env_name, lambda config: PettingZooEnv(create_env(num_players=num_players)))
     ModelCatalog.register_custom_model("pa_model", TorchActionMaskModel)
 
-    path_ = r"C:\Users\dima2\ray_results\maze_game_tune\PPO_maze_game_v2_b630a_00000_0_2023-04-19_17-51-48\checkpoint_001954"
-    checkpoint_path = os.path.expanduser(path_)
+    args = parser.parse_args()
+    checkpoint_path = os.path.expanduser(args.path)
 
     ray.init(local_mode=True, num_cpus=0)
     config = (
         PPOConfig()
-        .environment(env=env_name, clip_actions=True)
+        .environment(env=env_name)
         .training(
             model={'custom_model': 'pa_model'}
         )

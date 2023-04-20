@@ -1,7 +1,6 @@
 import torch
 from gymnasium.spaces import Dict, Discrete
 
-from ray.rllib.utils.torch_utils import FLOAT_MIN
 from torch import nn
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 
@@ -53,7 +52,7 @@ class TorchActionMaskModel(TorchModelV2, nn.Module):
             return logits, state
 
         # Convert action_mask into a [0.0 || -inf]-type mask.
-        inf_mask = torch.clamp(torch.log(action_mask), min=FLOAT_MIN)
+        inf_mask = torch.clamp(torch.log(action_mask), min=-1e10)
         masked_logits = logits + inf_mask
 
         # Return masked logits.

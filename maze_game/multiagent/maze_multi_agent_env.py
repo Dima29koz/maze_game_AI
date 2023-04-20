@@ -175,11 +175,11 @@ class MAMazeGameEnv(AECEnv):
                 drop_agents = set(raw_info.get('drop_pls', []))
                 for agent in dead_agents:
                     self.truncations[agent] = True
-                self.rewards[self.agent_selection] = self._reward_shoot(
-                    len(dmg_agents.difference(dead_agents)),
-                    len(dead_agents),
-                    len(drop_agents)
-                )
+                # self.rewards[self.agent_selection] = self._reward_shoot(
+                #     len(dmg_agents.difference(dead_agents)),
+                #     len(dead_agents),
+                #     len(drop_agents)
+                # )
 
         if self.game.is_win_condition(self.rules):
             return False
@@ -241,8 +241,8 @@ class MAMazeGameEnv(AECEnv):
 
     def _reward_shoot(self, num_dmg, num_dead, num_drop):
         if num_dmg == 0:
-            return -0.5
-        return (num_dmg * 0.1 + num_dead * 1 + num_drop * 0.3) * (self.max_steps - self.step_count) / self.max_steps
+            return 0
+        return (num_dmg * 0.5 + num_dead * 1 + num_drop * 0.3) * (1 - self.step_count / self.max_steps)
 
     def _reward(self) -> float:
         return 1 - 0.9 * (self.step_count / self.max_steps)

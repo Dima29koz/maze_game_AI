@@ -1,7 +1,10 @@
 import ray
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.core.rl_module.marl_module import MultiAgentRLModuleSpec
+from ray.rllib.core.rl_module.rl_module import SingleAgentRLModuleSpec
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
+from ray.rllib.examples.rl_module.random_rl_module import RandomRLModule
 from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.policy import PolicySpec
 
@@ -11,6 +14,7 @@ from maze_game.multiagent.config import env_name, num_players, obs_space, act_sp
 from maze_game.multiagent.maze_multi_agent_env import create_env
 from maze_game.multiagent.models.action_masking import TorchActionMaskModel
 from maze_game.multiagent.random_policy import RandomPolicy
+from maze_game.multiagent.self_playing import SelfPlayCallback
 
 
 def policy_mapping_fn(agent_id, episode, worker, **kwargs):
@@ -29,8 +33,10 @@ if __name__ == "__main__":
     config = (
         PPOConfig()
         .environment(env=env_name)
+        .callbacks(SelfPlayCallback)
         .rollouts(
             num_rollout_workers=15,
+            # num_rollout_workers=1,
             num_envs_per_worker=1,
             rollout_fragment_length='auto',
         )
@@ -67,6 +73,14 @@ if __name__ == "__main__":
         .debugging(log_level="WARN")
         .framework(framework="torch")
         .resources(num_gpus=1)
+        .rl_module(
+            rl_module_spec=MultiAgentRLModuleSpec(
+                module_specs={
+                    "main": SingleAgentRLModuleSpec(),
+                    "random": SingleAgentRLModuleSpec(module_class=RandomRLModule),
+                }
+            ),
+        )
     )
 
     tune.run(

@@ -158,7 +158,7 @@ class MAMazeGameEnv(AECEnv):
         assert self.game.get_allowed_abilities(current_player).get(action) is True, "played illegal move."
 
         if action is Acts.swap_treasure and current_player.treasure is None:
-            self.rewards[self.agent_selection] = self._reward()
+            self.rewards[self.agent_selection] = self._reward() * 0.1
 
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
         if response is not None:

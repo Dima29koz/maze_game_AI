@@ -5,9 +5,10 @@ import ray
 from ray.rllib.algorithms.ppo import PPO, PPOConfig
 from ray.rllib.env import PettingZooEnv
 from ray.rllib.models import ModelCatalog
+from ray.rllib.policy.policy import PolicySpec
 from ray.tune import register_env
 
-from maze_game.multiagent.config import policy_mapping_fn, policies
+from maze_game.multiagent.config import policy_mapping_fn, policies, obs_space, act_space
 from maze_game.multiagent.maze_multi_agent_env import MAMazeGameEnv, create_env
 from maze_game.multiagent.actions import action_to_action_space
 from maze_game.multiagent.models.action_masking import TorchActionMaskModel
@@ -15,6 +16,10 @@ from maze_game.multiagent.models.action_masking import TorchActionMaskModel
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--path", help="checkpoint path")
+
+
+def new_policy_mapping_fn(agent_id, episode, worker, **kwargs):
+    return 'main'
 
 
 def manual_policy(env, agent=None, observation=None):
@@ -32,7 +37,9 @@ def random_policy(env, agent, observation):
 
 
 def ppo_policy(algo, agent, observation):
-    return algo.compute_single_action(observation, policy_id=policy_mapping_fn(agent))
+    policy_id = policy_mapping_fn(agent)
+    # policy_id = new_policy_mapping_fn(agent, None, None)
+    return algo.compute_single_action(observation, policy_id=policy_id)
 
 
 def run(num_resets=1):
@@ -58,6 +65,15 @@ def run(num_resets=1):
         .multi_agent(
             policies=policies,
             policy_mapping_fn=policy_mapping_fn,
+            # policies={
+            #     'main': PolicySpec(
+            #         policy_class=None,
+            #         observation_space=obs_space,
+            #         action_space=act_space,
+            #     ),
+            # },
+            # policy_mapping_fn=new_policy_mapping_fn,
+            policies_to_train=[],
         )
         .debugging(log_level="ERROR")
         .framework(framework="torch")

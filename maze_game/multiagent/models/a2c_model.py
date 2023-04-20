@@ -4,10 +4,7 @@ from torch import nn
 from gymnasium.spaces import Box
 import numpy as np
 
-from ray.rllib.models.torch.misc import (
-    normc_initializer as torch_normc_initializer,
-    SlimFC,
-)
+from ray.rllib.models.torch.misc import SlimFC
 from ray.rllib.models.modelv2 import ModelV2
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
 from ray.rllib.policy.sample_batch import SampleBatch
@@ -50,6 +47,7 @@ class A2CNetwork(TorchModelV2, nn.Module):
         post_fc_stack_config = {
             "fcnet_hiddens": [256, 256],
             "fcnet_activation": "tanh",
+            "vf_share_layers": True,
         }
         self.policy_net = FullyConnectedNetwork(
             Box(float("-inf"), float("inf"), shape=(self.internal_model.num_outputs,), dtype=np.float32),
@@ -74,14 +72,12 @@ class A2CNetwork(TorchModelV2, nn.Module):
             in_size=self.policy_net.num_outputs,
             out_size=num_outputs,
             activation_fn=None,
-            initializer=torch_normc_initializer(0.01),
         )
         # Create the value branch model.
         self.value_layer = SlimFC(
             in_size=self.value_net.num_outputs,
             out_size=1,
             activation_fn=None,
-            initializer=torch_normc_initializer(0.01),
         )
 
     @override(ModelV2)

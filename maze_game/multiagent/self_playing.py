@@ -16,10 +16,8 @@ class SelfPlayCallback(DefaultCallbacks):
         # Note that normally, one should set up a proper evaluation config,
         # such that evaluation always happens on the already updated policy,
         # instead of on the already used train_batch.
-        print(result["hist_stats"])
         main_rew = result["hist_stats"].get("policy_main_reward")
-        opponent_rew = result["hist_stats"].get(f"policy_{self.current_opponent_policy}_reward")
-
+        opponent_rew = result["hist_stats"].get(f"policy_{self.current_opponent_policy}_reward", [])
         if not len(main_rew) == len(opponent_rew):
             opponent_rew = [a - b for a, b in zip(
                 result['hist_stats'].get('episode_reward'),
@@ -32,14 +30,15 @@ class SelfPlayCallback(DefaultCallbacks):
                 won += 1
         win_rate = won / len(main_rew)
         result["win_rate"] = win_rate
-        print(f"Iter={algorithm.iteration} win-rate={win_rate} -> ", end="")
+
         # If win rate is good -> Snapshot current policy and play against
         # it next, keeping the snapshot fixed and only improving the "main"
         # policy.
-        if win_rate > 0.7:
+        if win_rate > 0.8:
             self.current_opponent += 1
             self.current_opponent_policy = f"main_v{self.current_opponent}"
             new_pol_id = self.current_opponent_policy
+            print(f"Iter={algorithm.iteration} win-rate={win_rate} -> ", end="")
             print(f"adding new opponent to the mix ({new_pol_id}).")
 
             # Re-define the mapping function, such that "main" is forced
@@ -79,8 +78,6 @@ class SelfPlayCallback(DefaultCallbacks):
             # We need to sync the just copied local weights (from main policy)
             # to all the remote workers as well.
             algorithm.workers.sync_weights()
-        else:
-            print("not good enough; will keep learning ...")
 
         # +2 = main + random
         result["league_size"] = self.current_opponent + 2

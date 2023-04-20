@@ -35,9 +35,8 @@ if __name__ == "__main__":
         .environment(env=env_name)
         .callbacks(SelfPlayCallback)
         .rollouts(
-            num_rollout_workers=15,
-            # num_rollout_workers=1,
-            num_envs_per_worker=1,
+            num_rollout_workers=0,
+            num_envs_per_worker=24,
             rollout_fragment_length='auto',
         )
         .training(
@@ -72,7 +71,7 @@ if __name__ == "__main__":
         )
         .debugging(log_level="WARN")
         .framework(framework="torch")
-        .resources(num_gpus=1)
+        .resources(num_gpus=1, num_cpus_for_local_worker=16)
         .rl_module(
             rl_module_spec=MultiAgentRLModuleSpec(
                 module_specs={
@@ -87,12 +86,9 @@ if __name__ == "__main__":
         "PPO",
         name="maze_game_tune",
         stop={"timesteps_total": 1_000_000},
-        checkpoint_freq=200,
+        # checkpoint_freq=200,
         # keep_checkpoints_num=10,
         checkpoint_at_end=True,
         config=config.to_dict(),
-        sync_config=tune.SyncConfig(
-            sync_on_checkpoint=False
-        ),
     )
     ray.shutdown()

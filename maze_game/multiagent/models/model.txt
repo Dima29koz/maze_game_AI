@@ -13,11 +13,6 @@ TorchActionMaskModel(
             (6): Tanh()
             (7): Flatten(start_dim=1, end_dim=-1)
           )
-          (_value_branch): SlimFC(
-            (_model): Sequential(
-              (0): Linear(in_features=128, out_features=1, bias=True)
-            )
-          )
         )
         (other_stats): MazeCNN(
           (_convs): Sequential(
@@ -27,21 +22,12 @@ TorchActionMaskModel(
             (3): Tanh()
             (4): Flatten(start_dim=1, end_dim=-1)
           )
-          (_value_branch): SlimFC(
-            (_model): Sequential(
-              (0): Linear(in_features=16, out_features=1, bias=True)
-            )
-          )
         )
         (stats): MazeCNN(
           (_convs): Sequential(
             (0): Conv1d(6, 16, kernel_size=(4,), stride=(1,))
-            (1): Flatten(start_dim=1, end_dim=-1)
-          )
-          (_value_branch): SlimFC(
-            (_model): Sequential(
-              (0): Linear(in_features=16, out_features=1, bias=True)
-            )
+            (1): Tanh()
+            (2): Flatten(start_dim=1, end_dim=-1)
           )
         )
         (treasures): MazeCNN(
@@ -54,11 +40,6 @@ TorchActionMaskModel(
             (5): Conv2d(16, 32, kernel_size=(3, 3), stride=(1, 1))
             (6): Tanh()
             (7): Flatten(start_dim=1, end_dim=-1)
-          )
-          (_value_branch): SlimFC(
-            (_model): Sequential(
-              (0): Linear(in_features=32, out_features=1, bias=True)
-            )
           )
         )
         (walls): MazeCNN(
@@ -73,11 +54,6 @@ TorchActionMaskModel(
             (7): Tanh()
             (8): Flatten(start_dim=1, end_dim=-1)
           )
-          (_value_branch): SlimFC(
-            (_model): Sequential(
-              (0): Linear(in_features=128, out_features=1, bias=True)
-            )
-          )
         )
       )
     )
@@ -88,20 +64,6 @@ TorchActionMaskModel(
         )
       )
       (_hidden_layers): Sequential(
-        (0): SlimFC(
-          (_model): Sequential(
-            (0): Linear(in_features=320, out_features=256, bias=True)
-            (1): Tanh()
-          )
-        )
-        (1): SlimFC(
-          (_model): Sequential(
-            (0): Linear(in_features=256, out_features=256, bias=True)
-            (1): Tanh()
-          )
-        )
-      )
-      (_value_branch_separate): Sequential(
         (0): SlimFC(
           (_model): Sequential(
             (0): Linear(in_features=320, out_features=256, bias=True)
@@ -128,20 +90,6 @@ TorchActionMaskModel(
         )
       )
       (_hidden_layers): Sequential(
-        (0): SlimFC(
-          (_model): Sequential(
-            (0): Linear(in_features=320, out_features=256, bias=True)
-            (1): Tanh()
-          )
-        )
-        (1): SlimFC(
-          (_model): Sequential(
-            (0): Linear(in_features=256, out_features=256, bias=True)
-            (1): Tanh()
-          )
-        )
-      )
-      (_value_branch_separate): Sequential(
         (0): SlimFC(
           (_model): Sequential(
             (0): Linear(in_features=320, out_features=256, bias=True)

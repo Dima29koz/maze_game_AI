@@ -3,10 +3,6 @@ import gymnasium as gym
 import torch.nn as nn
 
 from ray.rllib.models.torch.torch_modelv2 import TorchModelV2
-from ray.rllib.models.torch.misc import (
-    normc_initializer,
-    SlimFC,
-)
 from ray.rllib.utils.annotations import override
 from ray.rllib.utils.typing import ModelConfigDict, TensorType
 
@@ -27,6 +23,7 @@ def _create_cnn(obs_type: str, n_input_channels: int):
         case 'stats':
             return nn.Sequential(
                 nn.Conv1d(n_input_channels, 16, 4),
+                nn.Tanh(),
                 nn.Flatten(),
             ), 16
         case 'other_stats':
@@ -84,9 +81,6 @@ class MazeCNN(TorchModelV2, nn.Module):
 
         self._logits = None
         self._convs = conv_layers
-        self._value_branch = SlimFC(
-            num_outputs, 1, initializer=normc_initializer(0.01), activation_fn=None
-        )
 
         self._features = None
 
@@ -106,6 +100,4 @@ class MazeCNN(TorchModelV2, nn.Module):
 
     @override(TorchModelV2)
     def value_function(self) -> TensorType:
-        assert self._features is not None, "must call forward() first"
-        features = self._features.squeeze(1)
-        return self._value_branch(features)
+        return self._features

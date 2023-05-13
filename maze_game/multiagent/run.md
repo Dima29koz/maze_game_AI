@@ -6,5 +6,5 @@ python run_env.py --path C:\Users\dima2\ray_results\maze_game_tune\PPO_maze_game
 ```
 
 ```bash
-tensorboard --logdir=C:\Users\dima2\ray_results\maze_game_tune
+tensorboard --logdir=C:\Users\dima2\ray_results
 ```

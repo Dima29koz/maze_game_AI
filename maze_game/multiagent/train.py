@@ -1,9 +1,11 @@
 import ray
-from ray import tune
+from ray import tune, air
+from ray.air import CheckpointConfig
 from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
 from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.policy import PolicySpec
+from ray.tune import SyncConfig
 
 from ray.tune.registry import register_env
 
@@ -71,14 +73,24 @@ if __name__ == "__main__":
         .checkpointing(checkpoint_trainable_policies_only=True)
     )
 
-    tune.run(
+    tuner = tune.Tuner(
         "PPO",
-        name="maze_game_tune",
-        # stop={"timesteps_total": 10_000_000},
-        stop={"timesteps_total": 500_000},
-        checkpoint_freq=200,
-        keep_checkpoints_num=5,
-        checkpoint_at_end=True,
-        config=config.to_dict(),
+        param_space=config.to_dict(),
+        run_config=air.RunConfig(
+            name="maze_game_tune",
+            storage_path='~/ray_results',
+            stop={"timesteps_total": 500_000},
+            verbose=3,
+            sync_config=SyncConfig(
+                syncer=None,  # modified library code
+            ),
+            checkpoint_config=CheckpointConfig(
+                num_to_keep=5,
+                checkpoint_frequency=100,
+                checkpoint_at_end=True,
+            ),
+        ),
     )
+    results = tuner.fit()
+
     ray.shutdown()

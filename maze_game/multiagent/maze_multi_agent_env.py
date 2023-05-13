@@ -11,7 +11,7 @@ from pettingzoo.utils.agent_selector import agent_selector
 
 from maze_game.game_core import SpectatorGUI, Game, Actions as Acts, Directions
 from maze_game.game_core import base_rules as ru
-from maze_game.game_core.game_engine.field import wall as w
+from maze_game.game_core.game_engine.field import wall as w, cell as c
 from maze_game.game_map_encoder import one_hot_encode
 from maze_game.multiagent.actions import Actions, action_space_to_action
 from maze_game.multiagent.observation_wraper import LastObservationWrapper
@@ -158,6 +158,13 @@ class MAMazeGameEnv(AECEnv):
         assert self.game.get_allowed_abilities(current_player).get(action) is True, "played illegal move."
 
         if action is Acts.swap_treasure and current_player.treasure is None:
+            # todo не давать награду за взятие клада (абуз медпункта и турельки)
+            # todo убрать зависимость от числа ходов (мб сам научится в оптимальную стратку)
+            # todo добавить награду за убийство (баланс с наградой за вынос кладов)
+            # todo проверить что я не клоун (винрейт считается корректно)
+            # todo сделать человеческие метрики (аля число побед за ласт 1000 игр)
+            # todo мб можно снапшотить за ласт 100 игр а не за ласт хз сколько (там прыгает от 20 до 50)
+            # todo сделать так чтобы оно играло против всех прошлых противников
             self.rewards[self.agent_selection] = self._reward() * 0.1
 
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
@@ -180,6 +187,8 @@ class MAMazeGameEnv(AECEnv):
                 #     len(dead_agents),
                 #     len(drop_agents)
                 # )
+            if raw_info.get('type_out_treasure'):
+                self.rewards[self.agent_selection] = self._reward() * 0.5
 
         if self.game.is_win_condition(self.rules):
             return False
@@ -198,7 +207,7 @@ class MAMazeGameEnv(AECEnv):
         mask[0] = act_pl_abilities.get(Acts.swap_treasure)
         for i, direction in enumerate(Directions, 1):
             wall = current_player.cell.walls[direction]
-            mask[i] = not wall.player_collision
+            mask[i] = not wall.player_collision or type(current_player.cell) is c.CellRiver
             if act_pl_abilities.get(Acts.throw_bomb):
                 mask[4 + i] = wall.breakable and type(wall) is not w.WallEmpty
             # todo shooting mask may be modified
@@ -245,7 +254,8 @@ class MAMazeGameEnv(AECEnv):
         return (num_dmg * 0.5 + num_dead * 1 + num_drop * 0.3) * (1 - self.step_count / self.max_steps)
 
     def _reward(self) -> float:
-        return 1 - 0.9 * (self.step_count / self.max_steps)
+        return 1 - 0.9 * (self.step_count / (self.max_steps * len(self.possible_agents)))
+        # return 1
 
     def observe(self, agent):
         st_obs = self.stacked_observations[agent]
@@ -294,9 +304,10 @@ class MAMazeGameEnv(AECEnv):
         if not is_running:
             reward = self._reward()
             self.rewards[current_agent] += reward
-            for agent in self.agents:
-                if agent != current_agent:
-                    self.rewards[agent] = -reward
+            # todo проверить как именно это влияет
+            # for agent in self.agents:
+            #     if agent != current_agent:
+            #         self.rewards[agent] = -reward
             self.terminations = {i: True for i in self.agents}
 
         self._accumulate_rewards()

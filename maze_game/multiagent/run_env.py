@@ -9,7 +9,7 @@ from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.policy import PolicySpec
 from ray.tune import register_env
 
-from maze_game.multiagent.config import policy_mapping_fn, policies, obs_space, act_space
+from maze_game.multiagent.config import policy_mapping_fn, policies, obs_space, act_space, gen_policy, num_players
 from maze_game.multiagent.maze_multi_agent_env import MAMazeGameEnv, create_env
 from maze_game.multiagent.actions import action_to_action_space
 from maze_game.multiagent.models.action_masking import TorchActionMaskModel
@@ -44,8 +44,8 @@ class RLGame:
                 model={'custom_model': 'pa_model'}
             )
             .multi_agent(
-                policies=policies,
-                policy_mapping_fn=policy_mapping_fn,
+                policies={f"main": gen_policy() for i in range(num_players)},
+                # policy_mapping_fn=policy_mapping_fn,
                 # policies={
                 #     'main': PolicySpec(
                 #         policy_class=None,
@@ -53,7 +53,7 @@ class RLGame:
                 #         action_space=act_space,
                 #     ),
                 # },
-                # policy_mapping_fn=new_policy_mapping_fn,
+                policy_mapping_fn=new_policy_mapping_fn,
                 policies_to_train=[],
             )
             .debugging(log_level="ERROR")
@@ -78,8 +78,8 @@ class RLGame:
         return self.env.action_space(agent).sample(observation["action_mask"])
 
     def ppo_policy(self, agent, observation):
-        policy_id = policy_mapping_fn(agent)
-        # policy_id = new_policy_mapping_fn(agent, None, None)
+        # policy_id = policy_mapping_fn(agent)
+        policy_id = new_policy_mapping_fn(agent, None, None)
         return self.ppo_agent.compute_single_action(observation, policy_id=policy_id)
 
     def run_performance_test(self, num_resets=100):

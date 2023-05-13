@@ -1,6 +1,7 @@
 import ray
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
+from ray.rllib.algorithms.appo import APPOConfig
 from ray.rllib.core.rl_module.marl_module import MultiAgentRLModuleSpec
 from ray.rllib.core.rl_module.rl_module import SingleAgentRLModuleSpec
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
@@ -24,7 +25,7 @@ def policy_mapping_fn(agent_id, episode, worker, **kwargs):
 
 
 if __name__ == "__main__":
-    ray.init(num_cpus=16)
+    ray.init(num_cpus=16, num_gpus=1)
     # ray.init(local_mode=True, num_cpus=0)
 
     register_env(env_name, lambda conf: PettingZooEnv(create_env(num_players=num_players)))
@@ -37,10 +38,9 @@ if __name__ == "__main__":
         .rollouts(
             num_rollout_workers=0,
             num_envs_per_worker=24,
-            rollout_fragment_length='auto',
         )
         .training(
-            train_batch_size=512,
+            use_critic=True,
             lr=0.001,
             gamma=0.99,
             lambda_=0.9,
@@ -49,7 +49,7 @@ if __name__ == "__main__":
             grad_clip=None,
             entropy_coeff=0.01,
             vf_loss_coeff=0.25,
-            sgd_minibatch_size=128,
+            sgd_minibatch_size=512,
             num_sgd_iter=4,
             model={'custom_model': 'pa_model'}
         )
@@ -72,22 +72,16 @@ if __name__ == "__main__":
         .debugging(log_level="WARN")
         .framework(framework="torch")
         .resources(num_gpus=1, num_cpus_for_local_worker=16)
-        .rl_module(
-            rl_module_spec=MultiAgentRLModuleSpec(
-                module_specs={
-                    "main": SingleAgentRLModuleSpec(),
-                    "random": SingleAgentRLModuleSpec(module_class=RandomRLModule),
-                }
-            ),
-        )
+        .checkpointing(checkpoint_trainable_policies_only=True)
     )
 
     tune.run(
         "PPO",
         name="maze_game_tune",
+        # stop={"timesteps_total": 10_000_000},
         stop={"timesteps_total": 1_000_000},
-        # checkpoint_freq=200,
-        # keep_checkpoints_num=10,
+        checkpoint_freq=200,
+        keep_checkpoints_num=5,
         checkpoint_at_end=True,
         config=config.to_dict(),
     )

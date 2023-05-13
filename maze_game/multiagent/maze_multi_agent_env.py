@@ -152,20 +152,22 @@ class MAMazeGameEnv(AECEnv):
                     for _ in range(st_obs.maxlen):
                         st_obs.append(obs)
 
+    # done todo не давать награду за взятие клада (абуз медпункта и турельки)
+    # done todo убрать зависимость от числа ходов (мб сам научится в оптимальную стратку)
+    # done todo добавить награду за убийство (баланс с наградой за вынос кладов)
+    # done todo добавить отрицательную награду за поражение (посмотреть что изменится) - does not work
+    # todo отскейлить награду до 2х (1) за победу всегда
+    # todo проверить что я не клоун (винрейт считается корректно)
+    # todo сделать человеческие метрики (аля число побед за ласт 1000 игр)
+    # todo мб можно снапшотить за ласт 100 игр а не за ласт хз сколько (там прыгает от 20 до 50)
+    # todo сделать так чтобы оно играло против всех прошлых противников
     def _process_turn(self, action: Acts, direction: Directions | None):
         # assert valid move
         current_player = self.game.get_current_player()
         assert self.game.get_allowed_abilities(current_player).get(action) is True, "played illegal move."
 
-        if action is Acts.swap_treasure and current_player.treasure is None:
-            # todo не давать награду за взятие клада (абуз медпункта и турельки)
-            # todo убрать зависимость от числа ходов (мб сам научится в оптимальную стратку)
-            # todo добавить награду за убийство (баланс с наградой за вынос кладов)
-            # todo проверить что я не клоун (винрейт считается корректно)
-            # todo сделать человеческие метрики (аля число побед за ласт 1000 игр)
-            # todo мб можно снапшотить за ласт 100 игр а не за ласт хз сколько (там прыгает от 20 до 50)
-            # todo сделать так чтобы оно играло против всех прошлых противников
-            self.rewards[self.agent_selection] = self._reward() * 0.1
+        # if action is Acts.swap_treasure and current_player.treasure is None:
+        #     self.rewards[self.agent_selection] = self._reward() * 0.1
 
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
         if response is not None:
@@ -182,11 +184,11 @@ class MAMazeGameEnv(AECEnv):
                 drop_agents = set(raw_info.get('drop_pls', []))
                 for agent in dead_agents:
                     self.truncations[agent] = True
-                # self.rewards[self.agent_selection] = self._reward_shoot(
-                #     len(dmg_agents.difference(dead_agents)),
-                #     len(dead_agents),
-                #     len(drop_agents)
-                # )
+                self.rewards[self.agent_selection] = self._reward_shoot(
+                    len(dmg_agents.difference(dead_agents)),
+                    len(dead_agents),
+                    len(drop_agents)
+                )
             if raw_info.get('type_out_treasure'):
                 self.rewards[self.agent_selection] = self._reward() * 0.5
 
@@ -248,14 +250,13 @@ class MAMazeGameEnv(AECEnv):
         x, y = self.game.get_current_player().cell.position.get()
         return x, y
 
-    def _reward_shoot(self, num_dmg, num_dead, num_drop):
-        if num_dmg == 0:
-            return 0
-        return (num_dmg * 0.5 + num_dead * 1 + num_drop * 0.3) * (1 - self.step_count / self.max_steps)
+    def _reward_shoot(self, num_dmg: int, num_dead: int, num_drop: int):
+        # return (num_dmg * 0.5 + num_dead * 1 + num_drop * 0.3) * (1 - self.step_count / self.max_steps)
+        return num_dead * 0.5
 
     def _reward(self) -> float:
-        return 1 - 0.9 * (self.step_count / (self.max_steps * len(self.possible_agents)))
-        # return 1
+        # return 1 - 0.9 * (self.step_count / (self.max_steps * len(self.possible_agents)))
+        return 1
 
     def observe(self, agent):
         st_obs = self.stacked_observations[agent]
@@ -305,9 +306,9 @@ class MAMazeGameEnv(AECEnv):
             reward = self._reward()
             self.rewards[current_agent] += reward
             # todo проверить как именно это влияет
-            # for agent in self.agents:
-            #     if agent != current_agent:
-            #         self.rewards[agent] = -reward
+            for agent in self.agents:
+                if agent != current_agent:
+                    self.rewards[agent] = -reward
             self.terminations = {i: True for i in self.agents}
 
         self._accumulate_rewards()

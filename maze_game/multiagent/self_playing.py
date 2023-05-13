@@ -1,6 +1,4 @@
-import numpy as np
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from ray.rllib.core.rl_module.rl_module import SingleAgentRLModuleSpec
 
 
 class SelfPlayCallback(DefaultCallbacks):
@@ -56,19 +54,13 @@ class SelfPlayCallback(DefaultCallbacks):
                 )
 
             main_policy = algorithm.get_policy("main")
-            if algorithm.config._enable_learner_api:
-                new_policy = algorithm.add_policy(
-                    policy_id=new_pol_id,
-                    policy_cls=type(main_policy),
-                    policy_mapping_fn=policy_mapping_fn,
-                    module_spec=SingleAgentRLModuleSpec.from_module(main_policy.model),
-                )
-            else:
-                new_policy = algorithm.add_policy(
-                    policy_id=new_pol_id,
-                    policy_cls=type(main_policy),
-                    policy_mapping_fn=policy_mapping_fn,
-                )
+            main_policy.export_checkpoint(export_dir=f'policy_on_snapshot_{new_pol_id}')
+
+            new_policy = algorithm.add_policy(
+                policy_id=new_pol_id,
+                policy_cls=type(main_policy),
+                policy_mapping_fn=policy_mapping_fn,
+            )
 
             # Set the weights of the new policy to the main policy.
             # We'll keep training the main policy, whereas `new_pol_id` will

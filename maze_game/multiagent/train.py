@@ -1,11 +1,7 @@
 import ray
 from ray import tune
 from ray.rllib.algorithms.ppo import PPOConfig
-from ray.rllib.algorithms.appo import APPOConfig
-from ray.rllib.core.rl_module.marl_module import MultiAgentRLModuleSpec
-from ray.rllib.core.rl_module.rl_module import SingleAgentRLModuleSpec
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
-from ray.rllib.examples.rl_module.random_rl_module import RandomRLModule
 from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.policy import PolicySpec
 
@@ -79,7 +75,7 @@ if __name__ == "__main__":
         "PPO",
         name="maze_game_tune",
         # stop={"timesteps_total": 10_000_000},
-        stop={"timesteps_total": 1_000_000},
+        stop={"timesteps_total": 500_000},
         checkpoint_freq=200,
         keep_checkpoints_num=5,
         checkpoint_at_end=True,

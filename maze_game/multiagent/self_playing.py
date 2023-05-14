@@ -24,6 +24,7 @@ class SelfPlayCallback(DefaultCallbacks):
         assert len(main_rew) == len(opponent_rew)
         won = 0
         for r_main, r_opponent in zip(main_rew, opponent_rew):
+            # todo тут есть абуз (вынести ложный клад и играть в турельку)
             if r_main > r_opponent:
                 won += 1
         win_rate = won / len(main_rew)
@@ -32,7 +33,7 @@ class SelfPlayCallback(DefaultCallbacks):
         # If win rate is good -> Snapshot current policy and play against
         # it next, keeping the snapshot fixed and only improving the "main"
         # policy.
-        if win_rate > 0.8:
+        if win_rate > 0.9:
             self.current_opponent += 1
             self.current_opponent_policy = f"main_v{self.current_opponent}"
             new_pol_id = self.current_opponent_policy

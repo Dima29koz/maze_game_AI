@@ -5,7 +5,7 @@ from ray.rllib.algorithms.ppo import PPOConfig
 from ray.rllib.env.wrappers.pettingzoo_env import PettingZooEnv
 from ray.rllib.models import ModelCatalog
 from ray.rllib.policy.policy import PolicySpec
-from ray.tune import SyncConfig
+from ray.tune import SyncConfig, CLIReporter
 
 from ray.tune.registry import register_env
 
@@ -34,8 +34,10 @@ if __name__ == "__main__":
         .environment(env=env_name)
         .callbacks(SelfPlayCallback)
         .rollouts(
-            num_rollout_workers=0,
-            num_envs_per_worker=24,
+            num_rollout_workers=15,
+            # num_envs_per_worker=24,
+            batch_mode='complete_episodes',
+            rollout_fragment_length=1024,
         )
         .training(
             use_critic=True,
@@ -48,6 +50,7 @@ if __name__ == "__main__":
             entropy_coeff=0.01,
             vf_loss_coeff=0.25,
             sgd_minibatch_size=512,
+            train_batch_size=15360,
             num_sgd_iter=4,
             model={'custom_model': 'pa_model'}
         )
@@ -66,10 +69,13 @@ if __name__ == "__main__":
             },
             policy_mapping_fn=policy_mapping_fn,
             policies_to_train=["main"],
+            policy_states_are_swappable=True,
+            count_steps_by='env_steps',
         )
         .debugging(log_level="WARN")
         .framework(framework="torch")
-        .resources(num_gpus=1, num_cpus_for_local_worker=16)
+        .resources(num_gpus=1)
+        # .resources(num_gpus=1, num_cpus_for_local_worker=16)
         .checkpointing(checkpoint_trainable_policies_only=True)
     )
 
@@ -79,8 +85,18 @@ if __name__ == "__main__":
         run_config=air.RunConfig(
             name="maze_game_tune",
             storage_path='~/ray_results',
-            stop={"timesteps_total": 500_000},
-            verbose=3,
+            stop={"timesteps_total": 5_000_000},
+            progress_reporter=CLIReporter(
+                metric_columns={
+                    'time_total_s': 'total_time (s)',
+                    'timesteps_total': 'steps',
+                    'win_rate': 'win_rate',
+                    'episode_len_mean': 'episode_len_mean',
+                    'policy_reward_mean/main': 'mean_reward',
+                    'league_size': 'league_size',
+                }
+            ),
+            verbose=1,
             sync_config=SyncConfig(
                 syncer=None,  # modified library code
             ),

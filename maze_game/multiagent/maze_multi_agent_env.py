@@ -12,6 +12,7 @@ from pettingzoo.utils.agent_selector import agent_selector
 from maze_game.game_core import SpectatorGUI, Game, Actions as Acts, Directions
 from maze_game.game_core import base_rules as ru
 from maze_game.game_core.game_engine.field import wall as w, cell as c
+from maze_game.game_core.game_engine.global_env.enums import TreasureTypes
 from maze_game.game_map_encoder import one_hot_encode
 from maze_game.multiagent.actions import Actions, action_space_to_action
 from maze_game.multiagent.observation_wraper import LastObservationWrapper
@@ -50,6 +51,7 @@ class MAMazeGameEnv(AECEnv):
         self.rules = {}
         self.players = []
         self.step_count = 0
+        self._is_treasure_taken_out = {}
 
         self.stacked_observations: dict[str, dict[str, deque]] = {
             agent: {
@@ -152,15 +154,10 @@ class MAMazeGameEnv(AECEnv):
                     for _ in range(st_obs.maxlen):
                         st_obs.append(obs)
 
-    # done todo не давать награду за взятие клада (абуз медпункта и турельки)
-    # done todo убрать зависимость от числа ходов (мб сам научится в оптимальную стратку)
-    # done todo добавить награду за убийство (баланс с наградой за вынос кладов)
-    # done todo добавить отрицательную награду за поражение (посмотреть что изменится) - does not work
-    # todo отскейлить награду до 2х (1) за победу всегда
-    # todo проверить что я не клоун (винрейт считается корректно)
     # todo сделать человеческие метрики (аля число побед за ласт 1000 игр)
     # todo мб можно снапшотить за ласт 100 игр а не за ласт хз сколько (там прыгает от 20 до 50)
     # todo сделать так чтобы оно играло против всех прошлых противников
+    # todo в конце обучения вылетело с ошибкой синхронизации но все сохранилось
     def _process_turn(self, action: Acts, direction: Directions | None):
         # assert valid move
         current_player = self.game.get_current_player()
@@ -189,8 +186,10 @@ class MAMazeGameEnv(AECEnv):
                     len(dead_agents),
                     len(drop_agents)
                 )
-            if raw_info.get('type_out_treasure'):
-                self.rewards[self.agent_selection] = self._reward() * 0.5
+            out_treasure = raw_info.get('type_out_treasure')
+            if out_treasure:
+                self.rewards[self.agent_selection] = self._reward_treasure(out_treasure)
+                self._is_treasure_taken_out[self.agent_selection] = True
 
         if self.game.is_win_condition(self.rules):
             return False
@@ -251,8 +250,16 @@ class MAMazeGameEnv(AECEnv):
         return x, y
 
     def _reward_shoot(self, num_dmg: int, num_dead: int, num_drop: int):
-        # return (num_dmg * 0.5 + num_dead * 1 + num_drop * 0.3) * (1 - self.step_count / self.max_steps)
-        return num_dead * 0.5
+        if self._is_treasure_taken_out[self.agent_selection]:
+            return num_dead * 0.5
+        return num_dead * 1
+
+    def _reward_treasure(self, treasure_type):
+        if self._is_treasure_taken_out[self.agent_selection]:
+            return self._reward() * 0.5
+        if treasure_type is TreasureTypes.very:
+            return self._reward()
+        return self._reward() * 0.5
 
     def _reward(self) -> float:
         # return 1 - 0.9 * (self.step_count / (self.max_steps * len(self.possible_agents)))
@@ -305,10 +312,9 @@ class MAMazeGameEnv(AECEnv):
         if not is_running:
             reward = self._reward()
             self.rewards[current_agent] += reward
-            # todo проверить как именно это влияет
             for agent in self.agents:
                 if agent != current_agent:
-                    self.rewards[agent] = -reward
+                    self.rewards[agent] -= reward
             self.terminations = {i: True for i in self.agents}
 
         self._accumulate_rewards()
@@ -323,6 +329,7 @@ class MAMazeGameEnv(AECEnv):
         self.terminations = {i: False for i in self.agents}
         self.truncations = {i: False for i in self.agents}
         self.infos = {i: {} for i in self.agents}
+        self._is_treasure_taken_out = {i: False for i in self.agents}
 
         self._agent_selector = agent_selector(self.agents)
 

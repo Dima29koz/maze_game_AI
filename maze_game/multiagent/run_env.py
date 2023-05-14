@@ -25,7 +25,7 @@ def new_policy_mapping_fn(agent_id, episode, worker, **kwargs):
 class RLGame:
     def __init__(self):
         env_name = "maze_game_v2"
-        self.num_players = 2
+        self.num_players = num_players
 
         register_env(env_name, lambda config: PettingZooEnv(create_env(num_players=self.num_players)))
         ModelCatalog.register_custom_model("pa_model", TorchActionMaskModel)

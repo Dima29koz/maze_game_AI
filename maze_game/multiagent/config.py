@@ -3,7 +3,7 @@ from ray.rllib.policy.policy import PolicySpec
 
 from maze_game.multiagent.maze_multi_agent_env import create_env
 
-num_players = 2
+num_players = 4
 env_name = "maze_game_v2"
 
 test_env = PettingZooEnv(create_env(num_players=num_players))

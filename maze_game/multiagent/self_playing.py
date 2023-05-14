@@ -1,5 +1,7 @@
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
 
+from maze_game.multiagent.config import num_players
+
 
 class SelfPlayCallback(DefaultCallbacks):
     def __init__(self):
@@ -39,7 +41,7 @@ class SelfPlayCallback(DefaultCallbacks):
                 agent_id = int(agent_id[-1])
                 return (
                     "main"
-                    if episode.episode_id % 2 == agent_id
+                    if episode.episode_id % num_players == agent_id
                     else self.current_opponent_policy
                 )
 

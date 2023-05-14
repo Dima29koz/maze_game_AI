@@ -18,7 +18,7 @@ from maze_game.multiagent.self_playing import SelfPlayCallback
 
 def policy_mapping_fn(agent_id, episode, worker, **kwargs):
     agent_idx = int(agent_id[-1])
-    policy = "main" if episode.episode_id % 2 == agent_idx else "random"
+    policy = "main" if episode.episode_id % num_players == agent_idx else "random"
     return policy
 
 

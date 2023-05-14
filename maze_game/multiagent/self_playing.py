@@ -15,18 +15,7 @@ class SelfPlayCallback(DefaultCallbacks):
         # such that evaluation always happens on the already updated policy,
         # instead of on the already used train_batch.
         main_rew = result["hist_stats"].get("policy_main_reward")
-        opponent_rew = result["hist_stats"].get(f"policy_{self.current_opponent_policy}_reward", [])
-        if not len(main_rew) == len(opponent_rew):
-            opponent_rew = [a - b for a, b in zip(
-                result['hist_stats'].get('episode_reward'),
-                result['hist_stats'].get('policy_main_reward')
-            )]
-        assert len(main_rew) == len(opponent_rew)
-        won = 0
-        for r_main, r_opponent in zip(main_rew, opponent_rew):
-            # todo тут есть абуз (вынести ложный клад и играть в турельку)
-            if r_main > r_opponent:
-                won += 1
+        won = sum(map(lambda e: e > 0.5, main_rew))
         win_rate = won / len(main_rew)
         result["win_rate"] = win_rate
 

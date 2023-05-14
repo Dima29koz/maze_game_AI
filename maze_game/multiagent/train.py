@@ -99,6 +99,7 @@ if __name__ == "__main__":
             verbose=1,
             sync_config=SyncConfig(
                 syncer=None,  # modified library code
+                sync_artifacts=False,
             ),
             checkpoint_config=CheckpointConfig(
                 num_to_keep=5,

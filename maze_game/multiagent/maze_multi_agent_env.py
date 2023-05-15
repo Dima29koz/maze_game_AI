@@ -90,7 +90,7 @@ class MAMazeGameEnv(AECEnv):
         other_stats_observation_space = spaces.Box(
             low=0,
             high=self.size + 2,
-            shape=(num_players - 1, 6, 4),
+            shape=(6, num_players - 1, 4),
             dtype=np.float32
         )
 
@@ -273,7 +273,7 @@ class MAMazeGameEnv(AECEnv):
                 "walls": np.array(st_obs['walls']).transpose((1, 0, 2, 3)),
                 "treasures": treasures,
                 "stats": np.array(st_obs['stats']).transpose((1, 0)),
-                "other_stats": np.array(st_obs['other_stats']).transpose((1, 2, 0)),
+                "other_stats": np.array(st_obs['other_stats']).transpose((2, 1, 0)),
             },
             "action_mask": self._action_masks(agent),
         }

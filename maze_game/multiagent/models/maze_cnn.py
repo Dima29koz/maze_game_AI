@@ -7,34 +7,33 @@ from ray.rllib.utils.annotations import override
 from ray.rllib.utils.typing import ModelConfigDict, TensorType
 
 
-def _create_cnn(obs_type: str, n_input_channels: int):
+def _create_cnn(obs_type: str, shape: tuple[int]):
+    n_input_channels = shape[0]
     match obs_type:
         case 'field':
             return nn.Sequential(
                 nn.Conv2d(n_input_channels, 32, (3, 3), padding=(1, 1)),
                 nn.Tanh(),
-                nn.MaxPool2d((2, 2)),
                 nn.Conv2d(32, 64, (3, 3), padding=(1, 1)),
                 nn.Tanh(),
+                nn.MaxPool2d((2, 2)),
                 nn.Conv2d(64, 128, (3, 3), padding=0),
                 nn.Tanh(),
                 nn.Flatten(),
             ), 128
         case 'stats':
             return nn.Sequential(
-                nn.Conv1d(n_input_channels, 16, 4),
+                nn.Conv1d(n_input_channels, n_input_channels * 4, 4, groups=n_input_channels),
                 nn.Tanh(),
                 nn.Flatten(),
-            ), 16
+            ), n_input_channels * 4
         case 'other_stats':
             # k x 6 x 4
             return nn.Sequential(
-                nn.Conv2d(n_input_channels, 4 * n_input_channels, (1, 4), padding=0),
-                nn.Tanh(),
-                nn.Conv2d(4 * n_input_channels, 16 * n_input_channels, (6, 1), padding=0),
+                nn.Conv2d(n_input_channels, n_input_channels * 4, (1, 4), padding=0, groups=n_input_channels),
                 nn.Tanh(),
                 nn.Flatten(),
-            ), 16 * n_input_channels
+            ), 4 * n_input_channels * shape[1]
         case 'walls':
             return nn.Sequential(
                 nn.Conv3d(n_input_channels, 32, (1, 3, 3), padding=(0, 1, 1)),
@@ -51,9 +50,9 @@ def _create_cnn(obs_type: str, n_input_channels: int):
             return nn.Sequential(
                 nn.Conv2d(n_input_channels, 8, (3, 3), padding=(1, 1)),
                 nn.Tanh(),
-                nn.MaxPool2d((2, 2)),
                 nn.Conv2d(8, 16, (3, 3), padding=(1, 1)),
                 nn.Tanh(),
+                nn.MaxPool2d((2, 2)),
                 nn.Conv2d(16, 32, (3, 3), padding=0),
                 nn.Tanh(),
                 nn.Flatten(),
@@ -72,8 +71,7 @@ class MazeCNN(TorchModelV2, nn.Module):
             model_config: ModelConfigDict,
             name: str,
     ):
-        n_input_channels = obs_space.shape[0]
-        conv_layers, num_outputs = _create_cnn(model_config.get('obs_type'), n_input_channels)
+        conv_layers, num_outputs = _create_cnn(model_config.get('obs_type'), obs_space.shape)
         TorchModelV2.__init__(
             self, obs_space, action_space, num_outputs, model_config, name
         )

@@ -34,9 +34,10 @@ class MAMazeGameEnv(AECEnv):
         "render_fps": 2,
     }
     _skip_agent_selection: str | None
+    _max_reward = 1
     game: Game
 
-    def __init__(self, render_mode=None, size=5, max_steps=250, seed=None, num_players=1):
+    def __init__(self, render_mode=None, size=5, max_steps=200, seed=None, num_players=2):
         super().__init__()
         self.size = size
         self.max_steps = max_steps
@@ -49,7 +50,7 @@ class MAMazeGameEnv(AECEnv):
         self.rules = {}
         self.players = []
         self.step_count = 0
-        self._is_treasure_taken_out = {}
+        self._remaining_reward = {}
 
         self.stacked_observations: dict[str, dict[str, deque]] = {
             agent: {
@@ -155,7 +156,7 @@ class MAMazeGameEnv(AECEnv):
         current_player = self.game.get_current_player()
         assert self.game.get_allowed_abilities(current_player).get(action) is True, "played illegal move."
         assert (
-            current_player.name == self.agent_selection
+                current_player.name == self.agent_selection
         ), f'wrong player: current selection is {self.agent_selection}, current player is {current_player.name}'
 
         response, next_player = self.game.make_turn(action.name, direction.name if direction else None)
@@ -172,17 +173,19 @@ class MAMazeGameEnv(AECEnv):
                 dead_agents = set(raw_info.get('dead_pls', []))
                 drop_agents = set(raw_info.get('drop_pls', []))
                 for agent in dead_agents:
-                    self.rewards[agent] = -self._reward()
+                    self.rewards[agent] = -self._max_reward
                     self.truncations[agent] = True
-                self.rewards[self.agent_selection] = self._reward_shoot(
-                    len(dmg_agents.difference(dead_agents)),
-                    len(dead_agents),
-                    len(drop_agents)
+                self._receive_reward(
+                    self.agent_selection,
+                    self._reward_shoot(
+                        len(dmg_agents.difference(dead_agents)),
+                        len(dead_agents),
+                        len(drop_agents)
+                    )
                 )
             out_treasure = raw_info.get('type_out_treasure')
             if out_treasure:
-                self.rewards[self.agent_selection] = self._reward_treasure(out_treasure)
-                self._is_treasure_taken_out[self.agent_selection] = True
+                self._receive_reward(self.agent_selection, self._reward_treasure(out_treasure))
 
         if action is not Acts.swap_treasure:
             self.agent_selection = self._get_next_agent(self.agent_selection)
@@ -239,20 +242,21 @@ class MAMazeGameEnv(AECEnv):
         x, y = self.game.get_current_player().cell.position.get()
         return x, y
 
+    def _receive_reward(self, agent: str, reward: float):
+        self.rewards[agent] = reward
+        self._remaining_reward[agent] -= reward
+
     def _reward_shoot(self, num_dmg: int, num_dead: int, num_drop: int):
-        if self._is_treasure_taken_out[self.agent_selection]:
-            return num_dead / len(self.possible_agents)
-        return num_dead / len(self.possible_agents)
+        if num_dead == 0:
+            return 0
+        if num_dead + 1 == len(self.agents):
+            return self._remaining_reward[self.agent_selection]
+        return num_dead / (len(self.agents) - 1) * (self._remaining_reward[self.agent_selection] / 2)
 
     def _reward_treasure(self, treasure_type):
-        if self._is_treasure_taken_out[self.agent_selection]:
-            return self._reward() * 0.5
         if treasure_type is TreasureTypes.very:
-            return self._reward()
-        return self._reward() * 0.5
-
-    def _reward(self) -> float:
-        return 1
+            return self._remaining_reward[self.agent_selection]
+        return self._remaining_reward[self.agent_selection] / 2 / (len(self.agents) - 1)
 
     def observe(self, agent):
         st_obs = self.stacked_observations[agent]
@@ -287,7 +291,7 @@ class MAMazeGameEnv(AECEnv):
         # removes dead agent
         agent = self.agent_selection
         assert (
-            self.terminations[agent] or self.truncations[agent]
+                self.terminations[agent] or self.truncations[agent]
         ), "an agent that was not dead as attempted to be removed"
         del self.terminations[agent]
         del self.truncations[agent]
@@ -322,11 +326,9 @@ class MAMazeGameEnv(AECEnv):
 
         # check if there is a winner
         if self.game.is_win_condition(self.rules):
-            reward = self._reward()
-            self.rewards[current_agent] += reward
             for agent in self.agents:
                 if agent != current_agent:
-                    self.rewards[agent] = -reward
+                    self.rewards[agent] = -self._max_reward
             self.terminations = {i: True for i in self.agents}
 
         self._accumulate_rewards()
@@ -336,12 +338,12 @@ class MAMazeGameEnv(AECEnv):
         self.step_count = 0
 
         self.agents = self.possible_agents[:]
-        self.rewards = {i: 0 for i in self.agents}
+        self.rewards = {name: 0 for name in self.agents}
         self._cumulative_rewards = {name: 0 for name in self.agents}
-        self.terminations = {i: False for i in self.agents}
-        self.truncations = {i: False for i in self.agents}
-        self.infos = {i: {} for i in self.agents}
-        self._is_treasure_taken_out = {i: False for i in self.agents}
+        self.terminations = {name: False for name in self.agents}
+        self.truncations = {name: False for name in self.agents}
+        self.infos = {name: {} for name in self.agents}
+        self._remaining_reward = {i: self._max_reward for i in self.agents}
 
         self.agent_selection = self.agents[0]
 

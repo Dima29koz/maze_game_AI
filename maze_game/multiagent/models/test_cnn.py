@@ -58,7 +58,7 @@ def run(num_resets=1):
                     [], None
                 )
                 # A2CNetwork / ComplexInputNetwork
-                # res, _ = model_a2c(
+                # res, _ = model_comp(
                 #     {
                 #         'obs': {
                 #             key: torch.Tensor([sub_obs] * 4) for key, sub_obs in observation.get('observation').items()

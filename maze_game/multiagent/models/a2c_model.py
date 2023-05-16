@@ -45,7 +45,7 @@ class A2CNetwork(TorchModelV2, nn.Module):
         )
 
         post_fc_stack_config = {
-            "fcnet_hiddens": [256, 256],
+            "fcnet_hiddens": [1500, 1024, 512],
             "fcnet_activation": "tanh",
             "vf_share_layers": True,
         }

@@ -70,7 +70,7 @@ if __name__ == "__main__":
             policy_mapping_fn=policy_mapping_fn,
             policies_to_train=["main"],
             policy_states_are_swappable=True,
-            count_steps_by='env_steps',
+            count_steps_by='agent_steps',
         )
         .debugging(log_level="WARN")
         .framework(framework="torch")
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         run_config=air.RunConfig(
             name="maze_game_tune",
             storage_path='~/ray_results',
-            stop={"timesteps_total": 5_000_000},
+            stop={"timesteps_total": 50_000_000},
             progress_reporter=CLIReporter(
                 metric_columns={
                     'time_total_s': 'total_time (s)',

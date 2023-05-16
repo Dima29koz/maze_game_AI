@@ -37,7 +37,7 @@ class MAMazeGameEnv(AECEnv):
     _max_reward = 1
     game: Game
 
-    def __init__(self, render_mode=None, size=5, max_steps=200, seed=None, num_players=2):
+    def __init__(self, render_mode=None, size=5, max_steps=100, seed=None, num_players=2):
         super().__init__()
         self.size = size
         self.max_steps = max_steps

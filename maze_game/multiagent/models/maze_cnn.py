@@ -23,14 +23,14 @@ def _create_cnn(obs_type: str, shape: tuple[int]):
             ), 128
         case 'stats':
             return nn.Sequential(
-                nn.Conv1d(n_input_channels, n_input_channels * 4, 4, groups=n_input_channels),
+                nn.Conv1d(n_input_channels, n_input_channels * 4, 2, groups=n_input_channels),
                 nn.Tanh(),
                 nn.Flatten(),
             ), n_input_channels * 4
         case 'other_stats':
             # k x 6 x 4
             return nn.Sequential(
-                nn.Conv2d(n_input_channels, n_input_channels * 4, (1, 4), padding=0, groups=n_input_channels),
+                nn.Conv2d(n_input_channels, n_input_channels * 4, (1, 2), padding=0, groups=n_input_channels),
                 nn.Tanh(),
                 nn.Flatten(),
             ), 4 * n_input_channels * shape[1]
@@ -38,11 +38,11 @@ def _create_cnn(obs_type: str, shape: tuple[int]):
             return nn.Sequential(
                 nn.Conv3d(n_input_channels, 32, (1, 3, 3), padding=(0, 1, 1)),
                 nn.Tanh(),
-                nn.MaxPool3d((2, 2, 2)),
+                nn.MaxPool3d((1, 2, 2)),
                 nn.Conv3d(32, 64, (1, 3, 3), padding=(0, 1, 1)),
                 nn.Tanh(),
-                nn.MaxPool3d((2, 1, 1)),
-                nn.Conv3d(64, 128, (1, 3, 3), padding=0),
+                # nn.MaxPool3d((2, 1, 1)),
+                nn.Conv3d(64, 128, (2, 3, 3), padding=0),
                 nn.Tanh(),
                 nn.Flatten(),
             ), 128

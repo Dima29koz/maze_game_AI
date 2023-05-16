@@ -55,9 +55,9 @@ class MAMazeGameEnv(AECEnv):
         self.stacked_observations: dict[str, dict[str, deque]] = {
             agent: {
                 "field": deque(maxlen=1),
-                "walls": deque(maxlen=4),
-                "stats": deque(maxlen=4),
-                "other_stats": deque(maxlen=4),
+                "walls": deque(maxlen=2),
+                "stats": deque(maxlen=2),
+                "other_stats": deque(maxlen=2),
             } for agent in self.agents
         }
 
@@ -72,7 +72,7 @@ class MAMazeGameEnv(AECEnv):
         walls_observation_space = spaces.Box(
             low=0,
             high=1,
-            shape=(12, 4, self.size + 2, self.size + 2),
+            shape=(12, 2, self.size + 2, self.size + 2),
             dtype=np.uint8,
         )
         treasures_observation_space = spaces.Box(
@@ -84,13 +84,13 @@ class MAMazeGameEnv(AECEnv):
         stats_observation_space = spaces.Box(
             low=0,
             high=self.size + 2,
-            shape=(6, 4),
+            shape=(6, 2),
             dtype=np.float32
         )
         other_stats_observation_space = spaces.Box(
             low=0,
             high=self.size + 2,
-            shape=(6, num_players - 1, 4),
+            shape=(6, num_players - 1, 2),
             dtype=np.float32
         )
 
@@ -173,7 +173,7 @@ class MAMazeGameEnv(AECEnv):
                 dead_agents = set(raw_info.get('dead_pls', []))
                 drop_agents = set(raw_info.get('drop_pls', []))
                 for agent in dead_agents:
-                    self.rewards[agent] = -self._max_reward
+                    # self.rewards[agent] = -self._max_reward
                     self.truncations[agent] = True
                 self._receive_reward(
                     self.agent_selection,
@@ -326,9 +326,9 @@ class MAMazeGameEnv(AECEnv):
 
         # check if there is a winner
         if self.game.is_win_condition(self.rules):
-            for agent in self.agents:
-                if agent != current_agent:
-                    self.rewards[agent] = -self._max_reward
+            # for agent in self.agents:
+            #     if agent != current_agent:
+            #         self.rewards[agent] = -self._max_reward
             self.terminations = {i: True for i in self.agents}
 
         self._accumulate_rewards()

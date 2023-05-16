@@ -1,4 +1,5 @@
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
+from ray.rllib.algorithms.ppo import PPOTorchPolicy
 
 from maze_game.multiagent.config import num_players
 
@@ -65,3 +66,9 @@ class SelfPlayCallback(DefaultCallbacks):
 
         # +2 = main + random
         result["league_size"] = self.current_opponent + 2
+
+    # uncomment for load checkpoint from path
+    # def on_algorithm_init(self, *, algorithm, **kwargs):
+    #     algorithm.load_checkpoint(
+    #         r'C:\Users\dima2\ray_results\maze_game_tune\PPO_maze_game_v2_302b6_00000_0_2023-05-16_16-33-05\checkpoint_000577',
+    #     )

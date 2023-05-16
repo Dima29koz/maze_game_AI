@@ -85,7 +85,7 @@ if __name__ == "__main__":
         run_config=air.RunConfig(
             name="maze_game_tune",
             storage_path='~/ray_results',
-            stop={"timesteps_total": 50_000_000},
+            stop={"timesteps_total": 10_000_000},
             progress_reporter=CLIReporter(
                 metric_columns={
                     'time_total_s': 'total_time (s)',

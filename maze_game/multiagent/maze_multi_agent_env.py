@@ -251,12 +251,13 @@ class MAMazeGameEnv(AECEnv):
             return 0
         if num_dead + 1 == len(self.agents):
             return self._remaining_reward[self.agent_selection]
-        return num_dead / (len(self.agents) - 1) * (self._remaining_reward[self.agent_selection] / 2)
+        return num_dead / (len(self.agents) - 1) * (self._remaining_reward[self.agent_selection] / 3)
 
     def _reward_treasure(self, treasure_type):
         if treasure_type is TreasureTypes.very:
             return self._remaining_reward[self.agent_selection]
-        return self._remaining_reward[self.agent_selection] / 2 / (len(self.agents) - 1)
+        # return self._remaining_reward[self.agent_selection] / 3 / (len(self.agents) - 1)
+        return 0
 
     def observe(self, agent):
         st_obs = self.stacked_observations[agent]

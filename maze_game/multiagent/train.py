@@ -12,7 +12,7 @@ from ray.tune.registry import register_env
 from maze_game.multiagent.config import env_name, num_players, obs_space, act_space
 from maze_game.multiagent.maze_multi_agent_env import create_env
 from maze_game.multiagent.models.action_masking import TorchActionMaskModel
-from maze_game.multiagent.random_policy import RandomPolicy
+from maze_game.multiagent.policy.random_policy import RandomPolicy
 from maze_game.multiagent.self_playing import SelfPlayCallback
 
 
@@ -37,11 +37,11 @@ if __name__ == "__main__":
             num_rollout_workers=15,
             # num_envs_per_worker=24,
             batch_mode='complete_episodes',
-            rollout_fragment_length=1024,
+            rollout_fragment_length=256,
         )
         .training(
             use_critic=True,
-            lr=0.001,
+            lr=0.0005,
             gamma=0.99,
             lambda_=0.9,
             use_gae=True,
@@ -49,9 +49,9 @@ if __name__ == "__main__":
             grad_clip=None,
             entropy_coeff=0.01,
             vf_loss_coeff=0.25,
-            sgd_minibatch_size=512,
-            train_batch_size=15360,
-            num_sgd_iter=4,
+            sgd_minibatch_size=1024,
+            train_batch_size=3840,
+            num_sgd_iter=10,
             model={'custom_model': 'pa_model'}
         )
         .multi_agent(
@@ -88,6 +88,7 @@ if __name__ == "__main__":
             stop={"timesteps_total": 10_000_000},
             progress_reporter=CLIReporter(
                 metric_columns={
+                    'iterations_since_restore': 'iter',
                     'time_total_s': 'total_time (s)',
                     'timesteps_total': 'steps',
                     'win_rate': 'win_rate',

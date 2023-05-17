@@ -1,7 +1,7 @@
 from ray.rllib.algorithms.callbacks import DefaultCallbacks
-from ray.rllib.algorithms.ppo import PPOTorchPolicy
 
 from maze_game.multiagent.config import num_players
+from maze_game.multiagent.policy.snapshot_policy import SnapshotPolicy
 
 
 class SelfPlayCallback(DefaultCallbacks):
@@ -25,7 +25,7 @@ class SelfPlayCallback(DefaultCallbacks):
         # If win rate is good -> Snapshot current policy and play against
         # it next, keeping the snapshot fixed and only improving the "main"
         # policy.
-        if win_rate > 0.9:
+        if win_rate > 0.65:
             self.current_opponent += 1
             self.current_opponent_policy = f"main_v{self.current_opponent}"
             new_pol_id = self.current_opponent_policy
@@ -51,7 +51,7 @@ class SelfPlayCallback(DefaultCallbacks):
 
             new_policy = algorithm.add_policy(
                 policy_id=new_pol_id,
-                policy_cls=type(main_policy),
+                policy_cls=SnapshotPolicy,
                 policy_mapping_fn=policy_mapping_fn,
             )
 
@@ -67,8 +67,8 @@ class SelfPlayCallback(DefaultCallbacks):
         # +2 = main + random
         result["league_size"] = self.current_opponent + 2
 
-    # uncomment for load checkpoint from path
+    # uncomment to load checkpoint from path
     # def on_algorithm_init(self, *, algorithm, **kwargs):
     #     algorithm.load_checkpoint(
-    #         r'C:\Users\dima2\ray_results\maze_game_tune\PPO_maze_game_v2_302b6_00000_0_2023-05-16_16-33-05\checkpoint_000577',
+    #         r'C:\Users\dima2\ray_results\maze_game_tune\PPO_maze_game_v2_10M_4RandAg_with_raw_obs\checkpoint_000577',
     #     )

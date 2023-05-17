@@ -1,4 +1,4 @@
-from gymnasium.spaces import Box
+
 import numpy as np
 import random
 import tree  # pip install dm_tree
@@ -17,30 +17,48 @@ from ray.rllib.utils.typing import ModelWeights, TensorStructType, TensorType
 class RandomPolicy(Policy):
     """Hand-coded policy that returns random actions."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Whether for compute_actions, the bounds given in action_space
-        # should be ignored (default: False). This is to test action-clipping
-        # and any Env's reaction to bounds breaches.
-        if self.config.get("ignore_action_bounds", False) and isinstance(
-            self.action_space, Box
-        ):
-            self.action_space_for_sampling = Box(
-                -float("inf"),
-                float("inf"),
-                shape=self.action_space.shape,
-                dtype=self.action_space.dtype,
-            )
-        else:
-            self.action_space_for_sampling = self.action_space
-
     @override(Policy)
     def init_view_requirements(self):
         super().init_view_requirements()
         # Disable for_training and action attributes for SampleBatch.INFOS column
         # since it can not be properly batched.
         vr = self.view_requirements[SampleBatch.INFOS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.OBS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = True
+        vr = self.view_requirements[SampleBatch.PREV_ACTIONS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.REWARDS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.PREV_REWARDS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.UNROLL_ID]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.AGENT_INDEX]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.T]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.NEXT_OBS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.TRUNCATEDS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.TERMINATEDS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.ACTIONS]
+        vr.used_for_training = False
+        vr.used_for_compute_actions = False
+        vr = self.view_requirements[SampleBatch.EPS_ID]
         vr.used_for_training = False
         vr.used_for_compute_actions = False
 
@@ -59,7 +77,7 @@ class RandomPolicy(Policy):
         obs_slice = np.int8(obs_batch[..., 0: 13])
 
         return (
-            [self.action_space_for_sampling.sample(obs_slice[i]) for i in range(obs_batch_size)],
+            [self.action_space.sample(obs_slice[i]) for i in range(obs_batch_size)],
             [],
             {},
         )

@@ -60,13 +60,13 @@ class ComplexInputNetwork(TorchModelV2, nn.Module):
             # idk if it`s needed
             # self.add_module("cnn_{}".format(key), self.cnns[key])
 
-            if key not in ["stats", "other_stats"]:
-                self.observe_net[key] = nn.Flatten()
-                if key == 'walls':
-                    sh = obs_space[key].shape
-                    concat_size += sh[0] * sh[2] * sh[3]
-                else:
-                    concat_size += obs_space[key].sample().size
+            # if key not in ["stats", "other_stats"]:
+            #     self.observe_net[key] = nn.Flatten()
+            #     if key == 'walls':
+            #         sh = obs_space[key].shape
+            #         concat_size += sh[0] * sh[2] * sh[3]
+            #     else:
+            #         concat_size += obs_space[key].sample().size
 
         # Actions and value heads.
         self.logits_layer = None
@@ -81,12 +81,12 @@ class ComplexInputNetwork(TorchModelV2, nn.Module):
         for key, component in self.cnns.items():
             cnn_out, _ = component(SampleBatch({SampleBatch.OBS: input_dict['obs'][key]}))
             outs.append(cnn_out)
-        for key, component in self.observe_net.items():
-            if key == 'walls':
-                observe_net_out = component(input_dict['obs'][key][:, :, -1, :, :])
-            else:
-                observe_net_out = component(input_dict['obs'][key])
-            outs.append(observe_net_out)
+        # for key, component in self.observe_net.items():
+        #     if key == 'walls':
+        #         observe_net_out = component(input_dict['obs'][key][:, :, -1, :, :])
+        #     else:
+        #         observe_net_out = component(input_dict['obs'][key])
+        #     outs.append(observe_net_out)
         # Concat all outputs and the non-image inputs.
         out = torch.cat(outs, dim=1)
         return out, []

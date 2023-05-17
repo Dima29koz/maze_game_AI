@@ -22,7 +22,7 @@ def policy_mapping_fn(agent_id, episode, worker, **kwargs):
     return policy
 
 
-if __name__ == "__main__":
+def train():
     ray.init(num_cpus=16, num_gpus=1)
     # ray.init(local_mode=True, num_cpus=0)
 
@@ -112,3 +112,7 @@ if __name__ == "__main__":
     results = tuner.fit()
 
     ray.shutdown()
+
+
+if __name__ == "__main__":
+    train()

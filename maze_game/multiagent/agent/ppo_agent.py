@@ -22,7 +22,10 @@ class PPOAgent:
         ray.init(local_mode=True, num_cpus=0)
         config = (
             PPOConfig()
-            .environment(env=env_name)
+            .environment(
+                env=env_name,
+                disable_env_checking=True,
+            )
             .rollouts(
                 num_rollout_workers=0,
             )

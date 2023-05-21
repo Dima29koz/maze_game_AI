@@ -26,6 +26,14 @@ def create_env(render_mode=None, **kwargs):
     return env
 
 
+def create_duel_env(render_mode=None, **kwargs):
+    env = MAMazeGameEnv(render_mode=render_mode, **kwargs)
+    env = wrappers.AssertOutOfBoundsWrapper(env)
+    env = wrappers.OrderEnforcingWrapper(env)
+    env = LastObservationWrapper(env)
+    return env
+
+
 class MAMazeGameEnv(AECEnv):
     metadata = {
         "render_modes": ["human", "rgb_array"],

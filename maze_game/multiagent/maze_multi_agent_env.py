@@ -37,8 +37,9 @@ class MAMazeGameEnv(AECEnv):
     _max_reward = 1
     game: Game
 
-    def __init__(self, render_mode=None, size=5, max_steps=100, seed=None, num_players=2):
+    def __init__(self, render_mode=None, size=5, max_steps=100, seed=None, num_players=2, callback_on_step=None):
         super().__init__()
+        self.callback_on_step = callback_on_step
         self.size = size
         self.max_steps = max_steps
         self.render_mode = render_mode
@@ -90,7 +91,7 @@ class MAMazeGameEnv(AECEnv):
         other_stats_observation_space = spaces.Box(
             low=0,
             high=self.size + 2,
-            shape=(6, num_players - 1, 2),
+            shape=(6, 4 - 1, 2),
             dtype=np.float32
         )
 
@@ -189,6 +190,7 @@ class MAMazeGameEnv(AECEnv):
 
         if action is not Acts.swap_treasure:
             self.agent_selection = self._get_next_agent(self.agent_selection)
+        return response
 
     def _action_masks(self, agent):
         mask = np.zeros(len(Actions), np.int8)
@@ -216,8 +218,13 @@ class MAMazeGameEnv(AECEnv):
 
     def _get_other_stats(self, current_agent):
         players_filter = filter(lambda pl: pl.name != current_agent, self.game.field.players)
+        other_players_stats = [self._get_player_stats(player) for player in players_filter]
+        len_other_players = len(other_players_stats)
+        if len_other_players < 3:
+            for _ in range(3 - len_other_players):
+                other_players_stats.append([0] * 6)
         return np.array(
-            [self._get_player_stats(player) for player in players_filter],
+            other_players_stats,
             dtype=np.float32)
 
     def _get_stats(self, agent):
@@ -320,7 +327,7 @@ class MAMazeGameEnv(AECEnv):
 
         self.rewards[current_agent] = 0
         act = action_space_to_action(action)
-        self._process_turn(*act)
+        response = self._process_turn(*act)
 
         if self.step_count >= self.max_steps * len(self.possible_agents):
             self.truncations = {i: True for i in self.agents}
@@ -331,6 +338,9 @@ class MAMazeGameEnv(AECEnv):
             #     if agent != current_agent:
             #         self.rewards[agent] = -self._max_reward
             self.terminations = {i: True for i in self.agents}
+        else:
+            if self.callback_on_step is not None:
+                self.callback_on_step(response)
 
         self._accumulate_rewards()
 
